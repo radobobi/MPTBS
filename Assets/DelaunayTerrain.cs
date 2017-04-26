@@ -2,12 +2,13 @@
 using UnityEngine;
 using TriangleNet.Geometry;
 using TriangleNet.Topology;
+using TriangleNet.Voronoi;
 
 public class DelaunayTerrain : MonoBehaviour
 {
     // Maximum size of the terrain.
-    public int xsize = 50;
-    public int ysize = 50;
+    public int xsize = 10;
+    public int ysize = 10;
 
     // Number of random points to generate.
     public int randomPoints = 1000;
@@ -29,6 +30,7 @@ public class DelaunayTerrain : MonoBehaviour
 
     // The delaunay mesh
     private TriangleNet.Mesh mesh = null;
+    private TriangleNet.Topology.DCEL.DcelMesh mesh2 = null;
 
     void Start()
     {
@@ -37,6 +39,8 @@ public class DelaunayTerrain : MonoBehaviour
 
     public virtual void Generate()
     {
+        print("GENERATING TRANGULATION.");
+
         UnityEngine.Random.InitState(0);
 
         elevations = new List<float>();
@@ -56,11 +60,14 @@ public class DelaunayTerrain : MonoBehaviour
 
         TriangleNet.Meshing.ConstraintOptions options = new TriangleNet.Meshing.ConstraintOptions() { ConformingDelaunay = true };
         mesh = (TriangleNet.Mesh)polygon.Triangulate(options);
+        mesh2 = (TriangleNet.Topology.DCEL.DcelMesh) (new StandardVoronoi(mesh));
 
         // Sample perlin noise to get elevations
         foreach (Vertex vert in mesh.Vertices)
         {
             float elevation = 0.0f;
+            
+            /*
             float amplitude = Mathf.Pow(persistence, octaves);
             float frequency = 1.0f;
             float maxVal = 0.0f;
@@ -75,7 +82,7 @@ public class DelaunayTerrain : MonoBehaviour
                 frequency *= frequencyBase;
             }
 
-            elevation = elevation / maxVal;
+            elevation = elevation / maxVal;*/
             elevations.Add(elevation);
         }
 
@@ -85,6 +92,8 @@ public class DelaunayTerrain : MonoBehaviour
 
     public void MakeMesh()
     {
+        print("MAKING MESH.");
+
         IEnumerator<Triangle> triangleEnumerator = mesh.Triangles.GetEnumerator();
 
         for (int chunkStart = 0; chunkStart < mesh.Triangles.Count; chunkStart += trianglesInChunk)
@@ -97,6 +106,11 @@ public class DelaunayTerrain : MonoBehaviour
             int chunkEnd = chunkStart + trianglesInChunk;
             for (int i = chunkStart; i < chunkEnd; i++)
             {
+                if (i%2!=0)
+                {
+                    continue;
+                }
+
                 if (!triangleEnumerator.MoveNext())
                 {
                     break;
@@ -138,6 +152,7 @@ public class DelaunayTerrain : MonoBehaviour
             chunk.GetComponent<MeshFilter>().mesh = chunkMesh;
             chunk.GetComponent<MeshCollider>().sharedMesh = chunkMesh;
             chunk.transform.parent = transform;
+            chunk.gameObject.AddComponent<MapClickDetector>();
         }
     }
 
@@ -150,6 +165,7 @@ public class DelaunayTerrain : MonoBehaviour
         return new Vector3((float)vertex.x, elevation, (float)vertex.y);
     }
 
+    /*
     public void OnDrawGizmos()
     {
         if (mesh == null)
@@ -167,5 +183,7 @@ public class DelaunayTerrain : MonoBehaviour
             Vector3 p1 = new Vector3((float)v1.x, 0.0f, (float)v1.y);
             Gizmos.DrawLine(p0, p1);
         }
+        
     }
+    */
 }

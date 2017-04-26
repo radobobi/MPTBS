@@ -18,12 +18,7 @@ public class MapClickDetector : MonoBehaviour, IPointerClickHandler, IPointerDow
         PhysicsRaycaster physicsRaycaster = GameObject.FindObjectOfType<PhysicsRaycaster>();
         if (physicsRaycaster == null)
         {
-            print("DID NOT FIND PHYSICSRAYCASTER");
             Camera.main.gameObject.AddComponent<PhysicsRaycaster>();
-        }
-        else
-        {
-            print("FOUND PHYSICSRAYCASTER");
         }
     }
 

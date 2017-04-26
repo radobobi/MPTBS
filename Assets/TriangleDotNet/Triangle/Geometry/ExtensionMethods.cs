@@ -25,6 +25,18 @@ namespace TriangleNet.Geometry
             return (new GenericMesher()).Triangulate(polygon, options, null);
         }
 
+        /*
+        /// <summary>
+        /// Triangulates a polygon, applying constraint options.
+        /// </summary>
+        /// <param name="options">Constraint options.</param>
+        public static IMesh GenerateVoronoiDiagram(this Mesh mesh)
+        {
+            //StandardVoronoi voronoiMesh = new StandardVoronoi(mesh);
+            return (IMesh) new StandardVoronoi(mesh);
+        }
+        */
+
         /// <summary>
         /// Triangulates a polygon, applying quality options.
         /// </summary>
