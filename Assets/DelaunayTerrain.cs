@@ -32,6 +32,14 @@ public class DelaunayTerrain : MonoBehaviour
     private TriangleNet.Mesh mesh = null;
     private TriangleNet.Topology.DCEL.DcelMesh mesh2 = null;
 
+    struct HalfEdge
+    {
+        public int start;
+        public int end;
+        public string face;
+    }
+
+
     void Start()
     {
         Generate();
@@ -87,36 +95,33 @@ public class DelaunayTerrain : MonoBehaviour
         }
 
         MakeMesh();
+        MakeMesh2();
     }
 
 
     public void MakeMesh()
     {
-        print("MAKING MESH.");
+        print("MAKING TRIANGLES MESH.");
 
         IEnumerator<Triangle> triangleEnumerator = mesh.Triangles.GetEnumerator();
 
         for (int chunkStart = 0; chunkStart < mesh.Triangles.Count; chunkStart += trianglesInChunk)
         {
-            List<Vector3> vertices = new List<Vector3>();
-            List<Vector3> normals = new List<Vector3>();
-            List<Vector2> uvs = new List<Vector2>();
             List<int> triangles = new List<int>();
 
             int chunkEnd = chunkStart + trianglesInChunk;
             for (int i = chunkStart; i < chunkEnd; i++)
             {
-                if (i%2!=0)
-                {
-                    continue;
-                }
-
                 if (!triangleEnumerator.MoveNext())
                 {
                     break;
                 }
 
                 Triangle triangle = triangleEnumerator.Current;
+
+                List<Vector3> vertices = new List<Vector3>();
+                List<Vector3> normals = new List<Vector3>();
+                List<Vector2> uvs = new List<Vector2>();
 
                 // For the triangles to be right-side up, they need
                 // to be wound in the opposite direction
@@ -140,29 +145,119 @@ public class DelaunayTerrain : MonoBehaviour
                 uvs.Add(new Vector2(0.0f, 0.0f));
                 uvs.Add(new Vector2(0.0f, 0.0f));
                 uvs.Add(new Vector2(0.0f, 0.0f));
+
+                Mesh chunkMesh = new Mesh();
+                chunkMesh.vertices = vertices.ToArray();
+                chunkMesh.uv = uvs.ToArray();
+                chunkMesh.triangles = triangles.ToArray();
+                chunkMesh.normals = normals.ToArray();
+
+                Transform chunk = Instantiate<Transform>(chunkPrefab, transform.position, transform.rotation);
+                chunk.GetComponent<MeshFilter>().mesh = chunkMesh;
+                chunk.GetComponent<MeshCollider>().sharedMesh = chunkMesh;
+                chunk.transform.parent = transform;
+                chunk.gameObject.AddComponent<MapClickDetector>();
+                chunk.gameObject.GetComponent<MeshRenderer>().material.color = Color.red;
             }
-
-            Mesh chunkMesh = new Mesh();
-            chunkMesh.vertices = vertices.ToArray();
-            chunkMesh.uv = uvs.ToArray();
-            chunkMesh.triangles = triangles.ToArray();
-            chunkMesh.normals = normals.ToArray();
-
-            Transform chunk = Instantiate<Transform>(chunkPrefab, transform.position, transform.rotation);
-            chunk.GetComponent<MeshFilter>().mesh = chunkMesh;
-            chunk.GetComponent<MeshCollider>().sharedMesh = chunkMesh;
-            chunk.transform.parent = transform;
-            chunk.gameObject.AddComponent<MapClickDetector>();
         }
     }
 
+    public void MakeMesh2()
+    {
+        print("MAKING VORONOI MESH.");
+
+        TriangleNet.Topology.DCEL.DcelMesh mesh2 = this.mesh2;
+
+        Vector3[] vertices = new Vector3[mesh2.Vertices.Count];
+
+        for (int indver = 0; indver < mesh2.Vertices.Count; ++indver)
+        {
+            print(indver);
+            //vertices[indver] = GetPoint3D(mesh2.Vertices[indver].id);
+            vertices[indver].x = (float) mesh2.Vertices[indver].X;
+            vertices[indver].z = (float) mesh2.Vertices[indver].Y;
+            print(vertices[indver]);
+        }
+
+        HalfEdge[] halfedges = new HalfEdge[mesh2.HalfEdges.Count];
+
+        for (int indhe = 0; indhe < mesh2.HalfEdges.Count; ++indhe)
+        {
+            print(indhe);
+            halfedges[indhe].start = (int)mesh2.HalfEdges[indhe].Origin.id;
+            halfedges[indhe].end = (int)mesh2.HalfEdges[indhe].Twin.Origin.id;
+            halfedges[indhe].face = (string)mesh2.HalfEdges[indhe].Face.ToString();
+        }
+
+        IEnumerator<TriangleNet.Topology.DCEL.Face> facesEnumerator = mesh2.Faces.GetEnumerator();
+
+        for (int j = 0; j < mesh2.Faces.Count; ++j)
+        {
+            List<int> triangles = new List<int>();
+            
+
+            //int chunkEnd = chunkStart + trianglesInChunk;
+            while (facesEnumerator.MoveNext())
+            {
+                TriangleNet.Topology.DCEL.Face face = facesEnumerator.Current;
+
+                //List<Vector3> vertices = new List<Vector3>();
+                List<Vector3> normals = new List<Vector3>();
+                List<Vector2> uvs = new List<Vector2>();
+
+                print(face.ToString());
+
+                
+
+                /*
+                Vector3 faceCenter = GetPoint3D(face.vertices[2].id);
+
+                // For the triangles to be right-side up, they need
+                // to be wound in the opposite direction
+                Vector3 v0 = GetPoint3D(face.vertices[2].id);
+                Vector3 v1 = GetPoint3D(face.vertices[1].id);
+                Vector3 v2 = GetPoint3D(face.vertices[0].id);
+
+                triangles.Add(vertices.Count);
+                triangles.Add(vertices.Count + 1);
+                triangles.Add(vertices.Count + 2);
+
+                vertices.Add(v0);
+                vertices.Add(v1);
+                vertices.Add(v2);
+
+                Vector3 normal = Vector3.Cross(v1 - v0, v2 - v0);
+                normals.Add(normal);
+                normals.Add(normal);
+                normals.Add(normal);
+
+                uvs.Add(new Vector2(0.0f, 0.0f));
+                uvs.Add(new Vector2(0.0f, 0.0f));
+                uvs.Add(new Vector2(0.0f, 0.0f));
+
+                Mesh chunkMesh = new Mesh();
+                chunkMesh.vertices = vertices.ToArray();
+                chunkMesh.uv = uvs.ToArray();
+                chunkMesh.triangles = triangles.ToArray();
+                chunkMesh.normals = normals.ToArray();
+
+                Transform chunk = Instantiate<Transform>(chunkPrefab, transform.position, transform.rotation);
+                chunk.GetComponent<MeshFilter>().mesh = chunkMesh;
+                chunk.GetComponent<MeshCollider>().sharedMesh = chunkMesh;
+                chunk.transform.parent = transform;
+                chunk.gameObject.AddComponent<MapClickDetector>();
+                chunk.gameObject.GetComponent<MeshRenderer>().material.color = Color.red;
+                */
+            }
+        }
+    }
 
     // Equivalent to calling new Vector3(GetPointLocation(i).x, GetElevation(i), GetPointLocation(i).y)
     public Vector3 GetPoint3D(int index)
     {
         Vertex vertex = mesh.vertices[index];
-        float elevation = elevations[index];
-        return new Vector3((float)vertex.x, elevation, (float)vertex.y);
+        //float elevation = elevations[index];
+        return new Vector3((float)vertex.x, 0, (float)vertex.y);
     }
 
     /*
