@@ -1,0 +1,18 @@
+GOALS:
+- Create stylistic map broken into irregularly-shaped "provinces".
+	- Style can be realistic or hand-drawn or whatever; 
+	but should be distinct.
+
+TODO:
+- Add "units" and a mechanic for moving the units around the map.
+	- Add pathfinding.
+- Draw boundaries of cells. (Change shader.)
+- Think of way to place terrain/worldmap under cells.
+	- The end-goal is a highly stylistic underlying map.
+- Consider placing rivers/mountains/etc on edges.
+- Twist Voronoi cell boundaries. (Make them less straight and flat.)
+	- Consider other ways of making "provinces" look less artificial.
+	(On the other hand, many US states have straight borders.)
+
+DONE:
+- Create map split into Voronoi cells.
