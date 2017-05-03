@@ -22,12 +22,12 @@ public class MapManager : MonoBehaviour
     public void mapclick(GameObject objClicked)
     {
         //Debug.Log("Clicked: " + objClicked.name);
-        print("Clicked: " + objClicked.name);
+        //print("Clicked: " + objClicked.name);
     }
 
     public void mapMouseDown(GameObject objClicked)
     {
-        Debug.Log("Pointer Down: " + objClicked.name);
+        //Debug.Log("Pointer Down: " + objClicked.name);
 
         MeshRenderer mr = objClicked.GetComponent<MeshRenderer>();
         mr.material.color = mouseDownColor;
@@ -35,7 +35,7 @@ public class MapManager : MonoBehaviour
 
     public void mapMouseUp(GameObject objClicked)
     {
-        Debug.Log("Pointer Up: " + objClicked.name);
+        //Debug.Log("Pointer Up: " + objClicked.name);
 
         MeshRenderer mr = objClicked.GetComponent<MeshRenderer>();
         mr.material.color = normalColor; ;
@@ -43,7 +43,7 @@ public class MapManager : MonoBehaviour
 
     public void mapMouseEnter(GameObject objClicked)
     {
-        Debug.Log("Pointer Enter: " + objClicked.name);
+        //Debug.Log("Pointer Enter: " + objClicked.name);
 
         MeshRenderer mr = objClicked.GetComponent<MeshRenderer>();
         mr.material.color = mouseEnterColor;
@@ -51,7 +51,7 @@ public class MapManager : MonoBehaviour
 
     public void mapMouseExit(GameObject objClicked)
     {
-        Debug.Log("Pointer Exit: " + objClicked.name);
+        //Debug.Log("Pointer Exit: " + objClicked.name);
 
         MeshRenderer mr = objClicked.GetComponent<MeshRenderer>();
         mr.material.color = normalColor;

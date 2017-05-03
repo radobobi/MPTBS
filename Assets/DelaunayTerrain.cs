@@ -76,7 +76,8 @@ public class DelaunayTerrain : MonoBehaviour
 
         TriangleNet.Meshing.ConstraintOptions options = new TriangleNet.Meshing.ConstraintOptions() { ConformingDelaunay = true };
         TriangleNet.Mesh mesh = (TriangleNet.Mesh)polygon.Triangulate(options);
-        mesh2 = (TriangleNet.Topology.DCEL.DcelMesh) (new StandardVoronoi(mesh));
+        //mesh2 = (TriangleNet.Topology.DCEL.DcelMesh) (new StandardVoronoi(mesh));
+        mesh2 = (TriangleNet.Topology.DCEL.DcelMesh)(new BoundedVoronoi(mesh));
 
         MakeMesh();
     }
