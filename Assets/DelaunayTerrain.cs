@@ -6,6 +6,24 @@ using TriangleNet.Voronoi;
 
 public class DelaunayTerrain : MonoBehaviour
 {
+    struct HalfEdge
+    {
+        public int id;
+        public int twin_id;
+        public int start;
+        public int end;
+        public int face;
+    }
+
+    struct VoronoiFace
+    {
+        public int id;
+        public float origin_x;
+        public float origin_y;
+        public List<HalfEdge> half_edges;
+        public List<int> neighbors;
+    }
+
     // Maximum size of the terrain.
     public int xsize = 10;
     public int ysize = 10;
@@ -25,26 +43,12 @@ public class DelaunayTerrain : MonoBehaviour
     // Prefab which is generated for each chunk of the mesh.
     public Transform chunkPrefab = null;
 
-    // Elevations at each point in the mesh
-    private List<float> elevations;
-
-    // The delaunay mesh
-    private TriangleNet.Mesh mesh = null;
+    // TraingleNet mesh.
     private TriangleNet.Topology.DCEL.DcelMesh mesh2 = null;
 
-    struct HalfEdge
-    {
-        public int start;
-        public int end;
-        public string face;
-    }
-
-    struct VoronoiFace
-    {
-        public float origin_x;
-        public float origin_y;
-        public List<HalfEdge> half_edges;
-    }
+    private Vector3[] vertices;
+    private HalfEdge[] halfedges;
+    private VoronoiFace[] faces;
 
     void Start()
     {
@@ -56,8 +60,6 @@ public class DelaunayTerrain : MonoBehaviour
         print("GENERATING TRANGULATION.");
 
         UnityEngine.Random.InitState(0);
-
-        elevations = new List<float>();
 
         float[] seed = new float[octaves];
 
@@ -73,142 +75,53 @@ public class DelaunayTerrain : MonoBehaviour
         }
 
         TriangleNet.Meshing.ConstraintOptions options = new TriangleNet.Meshing.ConstraintOptions() { ConformingDelaunay = true };
-        mesh = (TriangleNet.Mesh)polygon.Triangulate(options);
+        TriangleNet.Mesh mesh = (TriangleNet.Mesh)polygon.Triangulate(options);
         mesh2 = (TriangleNet.Topology.DCEL.DcelMesh) (new StandardVoronoi(mesh));
 
-        // Sample perlin noise to get elevations
-        foreach (Vertex vert in mesh.Vertices)
-        {
-            float elevation = 0.0f;
-            
-            /*
-            float amplitude = Mathf.Pow(persistence, octaves);
-            float frequency = 1.0f;
-            float maxVal = 0.0f;
-
-            for (int o = 0; o < octaves; o++)
-            {
-                float sample = (Mathf.PerlinNoise(seed[o] + (float)vert.x * sampleSize / (float)xsize * frequency,
-                                                  seed[o] + (float)vert.y * sampleSize / (float)ysize * frequency) - 0.5f) * amplitude;
-                elevation += sample;
-                maxVal += amplitude;
-                amplitude /= persistence;
-                frequency *= frequencyBase;
-            }
-
-            elevation = elevation / maxVal;*/
-            elevations.Add(elevation);
-        }
-
-        //MakeMesh();
-        MakeMesh2();
+        MakeMesh();
     }
-
 
     public void MakeMesh()
     {
-        print("MAKING TRIANGLES MESH.");
-
-        IEnumerator<Triangle> triangleEnumerator = mesh.Triangles.GetEnumerator();
-
-        for (int chunkStart = 0; chunkStart < mesh.Triangles.Count; chunkStart += trianglesInChunk)
-        {
-            List<int> triangles = new List<int>();
-
-            int chunkEnd = chunkStart + trianglesInChunk;
-            for (int i = chunkStart; i < chunkEnd; i++)
-            {
-                if (!triangleEnumerator.MoveNext())
-                {
-                    break;
-                }
-
-                Triangle triangle = triangleEnumerator.Current;
-
-                List<Vector3> vertices = new List<Vector3>();
-                List<Vector3> normals = new List<Vector3>();
-                List<Vector2> uvs = new List<Vector2>();
-
-                // For the triangles to be right-side up, they need
-                // to be wound in the opposite direction
-                Vector3 v0 = GetPoint3D(triangle.vertices[2].id);
-                Vector3 v1 = GetPoint3D(triangle.vertices[1].id);
-                Vector3 v2 = GetPoint3D(triangle.vertices[0].id);
-
-                triangles.Add(vertices.Count);
-                triangles.Add(vertices.Count + 1);
-                triangles.Add(vertices.Count + 2);
-
-                vertices.Add(v0);
-                vertices.Add(v1);
-                vertices.Add(v2);
-
-                Vector3 normal = Vector3.Cross(v1 - v0, v2 - v0);
-                normals.Add(normal);
-                normals.Add(normal);
-                normals.Add(normal);
-
-                uvs.Add(new Vector2(0.0f, 0.0f));
-                uvs.Add(new Vector2(0.0f, 0.0f));
-                uvs.Add(new Vector2(0.0f, 0.0f));
-
-                Mesh chunkMesh = new Mesh();
-                chunkMesh.vertices = vertices.ToArray();
-                chunkMesh.uv = uvs.ToArray();
-                chunkMesh.triangles = triangles.ToArray();
-                chunkMesh.normals = normals.ToArray();
-
-                Transform chunk = Instantiate<Transform>(chunkPrefab, transform.position, transform.rotation);
-                chunk.GetComponent<MeshFilter>().mesh = chunkMesh;
-                chunk.GetComponent<MeshCollider>().sharedMesh = chunkMesh;
-                chunk.transform.parent = transform;
-                chunk.gameObject.AddComponent<MapClickDetector>();
-                chunk.gameObject.GetComponent<MeshRenderer>().material.color = Color.red;
-            }
-        }
-    }
-
-    public void MakeMesh2()
-    {
-        print("MAKING VORONOI MESH.");
+        print("CONVERTING TRIANGLENET OUTPUT TO UNITY MESH.");
 
         TriangleNet.Topology.DCEL.DcelMesh mesh2 = this.mesh2;
 
-        Vector3[] vertices = new Vector3[mesh2.Vertices.Count];
+        vertices = new Vector3[mesh2.Vertices.Count];
 
         for (int indver = 0; indver < mesh2.Vertices.Count; ++indver)
         {
-            print(indver);
-            //vertices[indver] = GetPoint3D(mesh2.Vertices[indver].id);
             vertices[indver].x = (float) mesh2.Vertices[indver].X;
             vertices[indver].z = (float) mesh2.Vertices[indver].Y;
-            print(vertices[indver]);
         }
 
-        HalfEdge[] halfedges = new HalfEdge[mesh2.HalfEdges.Count];
+        halfedges = new HalfEdge[mesh2.HalfEdges.Count];
 
         for (int indhe = 0; indhe < mesh2.HalfEdges.Count; ++indhe)
         {
-            print(indhe);
+            halfedges[indhe].id = mesh2.HalfEdges[indhe].ID;
+            halfedges[indhe].twin_id = mesh2.HalfEdges[indhe].Twin.ID;
             halfedges[indhe].start = (int)mesh2.HalfEdges[indhe].Origin.id;
             halfedges[indhe].end = (int)mesh2.HalfEdges[indhe].Twin.Origin.id;
-            halfedges[indhe].face = (string)mesh2.HalfEdges[indhe].Face.ToString();
+            halfedges[indhe].face = mesh2.HalfEdges[indhe].Face.ID;
         }
 
-        VoronoiFace[] faces = new VoronoiFace[mesh2.Faces.Count];
+        faces = new VoronoiFace[mesh2.Faces.Count];
 
         for (int indf = 0; indf < mesh2.Faces.Count; ++indf)
         {
-            print(indf);
             faces[indf].origin_x = (float)mesh2.Faces[indf].generator.X;
             faces[indf].origin_y = (float)mesh2.Faces[indf].generator.Y;
+            faces[indf].id = mesh2.Faces[indf].ID;
 
             faces[indf].half_edges = new List<HalfEdge>();
+            faces[indf].neighbors = new List<int>();
             for (int indhe = 0; indhe < halfedges.Length; ++indhe)
             {
-                if (halfedges[indhe].face.Equals(mesh2.Faces[indf].ToString()))
+                if (halfedges[indhe].face == mesh2.Faces[indf].ID)
                 {
                     faces[indf].half_edges.Add(halfedges[indhe]);
+                    faces[indf].neighbors.Add(halfedges[halfedges[indhe].twin_id].face);
                 }
             }
         }
@@ -223,7 +136,6 @@ public class DelaunayTerrain : MonoBehaviour
             List<Vector3> normals = new List<Vector3>();
             List<Vector2> uvs = new List<Vector2>();
 
-            //int chunkEnd = chunkStart + trianglesInChunk;
             foreach (HalfEdge he in current_face.half_edges)
             {
                 Vector3 v0 = faceCenter;
@@ -261,35 +173,7 @@ public class DelaunayTerrain : MonoBehaviour
             chunk.gameObject.AddComponent<MapClickDetector>();
             chunk.gameObject.GetComponent<MeshRenderer>().material.color = Color.red;
         }
-    }
 
-    // Equivalent to calling new Vector3(GetPointLocation(i).x, GetElevation(i), GetPointLocation(i).y)
-    public Vector3 GetPoint3D(int index)
-    {
-        Vertex vertex = mesh.vertices[index];
-        //float elevation = elevations[index];
-        return new Vector3((float)vertex.x, 0, (float)vertex.y);
+        print("SUCCESSFULLY GENERATED MESH!");
     }
-
-    /*
-    public void OnDrawGizmos()
-    {
-        if (mesh == null)
-        {
-            // Probably in the editor
-            return;
-        }
-
-        Gizmos.color = Color.red;
-        foreach (Edge edge in mesh.Edges)
-        {
-            Vertex v0 = mesh.vertices[edge.P0];
-            Vertex v1 = mesh.vertices[edge.P1];
-            Vector3 p0 = new Vector3((float)v0.x, 0.0f, (float)v0.y);
-            Vector3 p1 = new Vector3((float)v1.x, 0.0f, (float)v1.y);
-            Gizmos.DrawLine(p0, p1);
-        }
-        
-    }
-    */
 }
