@@ -39,6 +39,12 @@ public class DelaunayTerrain : MonoBehaviour
         public string face;
     }
 
+    struct VoronoiFace
+    {
+        public float origin_x;
+        public float origin_y;
+        public List<HalfEdge> half_edges;
+    }
 
     void Start()
     {
@@ -94,7 +100,7 @@ public class DelaunayTerrain : MonoBehaviour
             elevations.Add(elevation);
         }
 
-        MakeMesh();
+        //MakeMesh();
         MakeMesh2();
     }
 
@@ -189,42 +195,48 @@ public class DelaunayTerrain : MonoBehaviour
             halfedges[indhe].face = (string)mesh2.HalfEdges[indhe].Face.ToString();
         }
 
-        IEnumerator<TriangleNet.Topology.DCEL.Face> facesEnumerator = mesh2.Faces.GetEnumerator();
+        VoronoiFace[] faces = new VoronoiFace[mesh2.Faces.Count];
 
-        for (int j = 0; j < mesh2.Faces.Count; ++j)
+        for (int indf = 0; indf < mesh2.Faces.Count; ++indf)
         {
+            print(indf);
+            faces[indf].origin_x = (float)mesh2.Faces[indf].generator.X;
+            faces[indf].origin_y = (float)mesh2.Faces[indf].generator.Y;
+
+            faces[indf].half_edges = new List<HalfEdge>();
+            for (int indhe = 0; indhe < halfedges.Length; ++indhe)
+            {
+                if (halfedges[indhe].face.Equals(mesh2.Faces[indf].ToString()))
+                {
+                    faces[indf].half_edges.Add(halfedges[indhe]);
+                }
+            }
+        }
+
+        for (int i = 0; i < faces.Length; ++i)
+        {
+            VoronoiFace current_face = faces[i];
             List<int> triangles = new List<int>();
-            
+
+            Vector3 faceCenter = new Vector3(current_face.origin_x, 0, current_face.origin_y);
+            List<Vector3> faceVertices = new List<Vector3>();
+            List<Vector3> normals = new List<Vector3>();
+            List<Vector2> uvs = new List<Vector2>();
 
             //int chunkEnd = chunkStart + trianglesInChunk;
-            while (facesEnumerator.MoveNext())
+            foreach (HalfEdge he in current_face.half_edges)
             {
-                TriangleNet.Topology.DCEL.Face face = facesEnumerator.Current;
+                Vector3 v0 = faceCenter;
+                Vector3 v1 = vertices[he.start];
+                Vector3 v2 = vertices[he.end];
 
-                //List<Vector3> vertices = new List<Vector3>();
-                List<Vector3> normals = new List<Vector3>();
-                List<Vector2> uvs = new List<Vector2>();
+                triangles.Add(faceVertices.Count);
+                triangles.Add(faceVertices.Count+1);
+                triangles.Add(faceVertices.Count+2);
 
-                print(face.ToString());
-
-                
-
-                /*
-                Vector3 faceCenter = GetPoint3D(face.vertices[2].id);
-
-                // For the triangles to be right-side up, they need
-                // to be wound in the opposite direction
-                Vector3 v0 = GetPoint3D(face.vertices[2].id);
-                Vector3 v1 = GetPoint3D(face.vertices[1].id);
-                Vector3 v2 = GetPoint3D(face.vertices[0].id);
-
-                triangles.Add(vertices.Count);
-                triangles.Add(vertices.Count + 1);
-                triangles.Add(vertices.Count + 2);
-
-                vertices.Add(v0);
-                vertices.Add(v1);
-                vertices.Add(v2);
+                faceVertices.Add(v2);
+                faceVertices.Add(v1);
+                faceVertices.Add(v0);
 
                 Vector3 normal = Vector3.Cross(v1 - v0, v2 - v0);
                 normals.Add(normal);
@@ -233,22 +245,21 @@ public class DelaunayTerrain : MonoBehaviour
 
                 uvs.Add(new Vector2(0.0f, 0.0f));
                 uvs.Add(new Vector2(0.0f, 0.0f));
-                uvs.Add(new Vector2(0.0f, 0.0f));
-
-                Mesh chunkMesh = new Mesh();
-                chunkMesh.vertices = vertices.ToArray();
-                chunkMesh.uv = uvs.ToArray();
-                chunkMesh.triangles = triangles.ToArray();
-                chunkMesh.normals = normals.ToArray();
-
-                Transform chunk = Instantiate<Transform>(chunkPrefab, transform.position, transform.rotation);
-                chunk.GetComponent<MeshFilter>().mesh = chunkMesh;
-                chunk.GetComponent<MeshCollider>().sharedMesh = chunkMesh;
-                chunk.transform.parent = transform;
-                chunk.gameObject.AddComponent<MapClickDetector>();
-                chunk.gameObject.GetComponent<MeshRenderer>().material.color = Color.red;
-                */
+                uvs.Add(new Vector2(0.0f, 0.0f));  
             }
+
+            Mesh chunkMesh = new Mesh();
+            chunkMesh.vertices = faceVertices.ToArray();
+            chunkMesh.uv = uvs.ToArray();
+            chunkMesh.triangles = triangles.ToArray();
+            chunkMesh.normals = normals.ToArray();
+
+            Transform chunk = Instantiate<Transform>(chunkPrefab, transform.position, transform.rotation);
+            chunk.GetComponent<MeshFilter>().mesh = chunkMesh;
+            chunk.GetComponent<MeshCollider>().sharedMesh = chunkMesh;
+            chunk.transform.parent = transform;
+            chunk.gameObject.AddComponent<MapClickDetector>();
+            chunk.gameObject.GetComponent<MeshRenderer>().material.color = Color.red;
         }
     }
 
