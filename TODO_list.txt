@@ -2,6 +2,7 @@ GOALS:
 - Create stylistic map broken into irregularly-shaped "provinces".
 	- Style can be realistic or hand-drawn or whatever; 
 	but should be distinct.
+- Clean, extensible codebase that takes advantage of Unity features.
 
 TODO:
 - Add "units" and a mechanic for moving the units around the map.
