@@ -7,13 +7,17 @@ GOALS:
 TODO:
 - Add "units" and a mechanic for moving the units around the map.
 	- Add pathfinding.
-- Draw boundaries of cells. (Change shader.)
 - Think of way to place terrain/worldmap under cells.
 	- The end-goal is a highly stylistic underlying map.
 - Consider placing rivers/mountains/etc on edges.
+- Refactor code to store global variables somewhere.
+- Add logic for uniting Voronoi cells in order to avoid having tiny cells.
+- Think about disabling connections along short edges.
+- Make neighboring cells change color when cursor over current cell.
 - Twist Voronoi cell boundaries. (Make them less straight and flat.)
 	- Consider other ways of making "provinces" look less artificial.
 	(On the other hand, many US states have straight borders.)
 
 DONE:
-- Create map split into Voronoi cells.
+(2017-05-02) - Create map split into Voronoi cells.
+(2017-05-03) - Managed to draw cell edges. Not done well but works.

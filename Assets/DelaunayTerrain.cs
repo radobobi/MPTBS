@@ -80,6 +80,8 @@ public class DelaunayTerrain : MonoBehaviour
         mesh2 = (TriangleNet.Topology.DCEL.DcelMesh)(new BoundedVoronoi(mesh));
 
         MakeMesh();
+        DrawMesh();
+        DrawEdges();
     }
 
     public void MakeMesh()
@@ -127,6 +129,11 @@ public class DelaunayTerrain : MonoBehaviour
             }
         }
 
+        print("SUCCESSFULLY GENERATED MESH!");
+    }
+
+    private void DrawMesh()
+    {
         for (int i = 0; i < faces.Length; ++i)
         {
             VoronoiFace current_face = faces[i];
@@ -144,8 +151,8 @@ public class DelaunayTerrain : MonoBehaviour
                 Vector3 v2 = vertices[he.end];
 
                 triangles.Add(faceVertices.Count);
-                triangles.Add(faceVertices.Count+1);
-                triangles.Add(faceVertices.Count+2);
+                triangles.Add(faceVertices.Count + 1);
+                triangles.Add(faceVertices.Count + 2);
 
                 faceVertices.Add(v2);
                 faceVertices.Add(v1);
@@ -158,7 +165,7 @@ public class DelaunayTerrain : MonoBehaviour
 
                 uvs.Add(new Vector2(0.0f, 0.0f));
                 uvs.Add(new Vector2(0.0f, 0.0f));
-                uvs.Add(new Vector2(0.0f, 0.0f));  
+                uvs.Add(new Vector2(0.0f, 0.0f));
             }
 
             Mesh chunkMesh = new Mesh();
@@ -174,7 +181,37 @@ public class DelaunayTerrain : MonoBehaviour
             chunk.gameObject.AddComponent<MapClickDetector>();
             chunk.gameObject.GetComponent<MeshRenderer>().material.color = Color.red;
         }
-
-        print("SUCCESSFULLY GENERATED MESH!");
     }
+
+    
+    private void DrawEdges()
+    {
+        for (int i = 0; i < halfedges.Length; ++i)
+        {
+            Vector3 start = vertices[halfedges[i].start];
+            Vector3 end = vertices[halfedges[i].end];
+            DrawLine(new Vector3(start.x, start.z, 0), new Vector3(end.x, end.z, 0), Color.blue, transform);
+        }
+    }
+
+    
+    void DrawLine(Vector3 start, Vector3 end, Color color, Transform transform)
+    {
+        GameObject myLine = new GameObject("Line " + start.ToString() + "--" + end.ToString());
+        myLine.transform.parent = transform;
+        myLine.transform.localPosition = Vector3.zero;
+        myLine.AddComponent<LineRenderer>();
+        LineRenderer lr = myLine.GetComponent<LineRenderer>();
+        lr.material = new Material(Shader.Find("Particles/Alpha Blended Premultiply"));
+        lr.startColor = color;
+        lr.endColor = color;
+        lr.startWidth = 0.1f;
+        lr.endWidth = 0.1f;
+        lr.SetPosition(0, start + transform.position);
+        lr.SetPosition(1, end + transform.position);
+        //GameObject.Destroy(myLine, duration);
+        
+        //lr.transform.parent = transform;
+    }
+    
 }
