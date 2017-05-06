@@ -50,8 +50,23 @@ public class DelaunayTerrain : MonoBehaviour
     private HalfEdge[] halfedges;
     private VoronoiFace[] faces;
 
+    /* Adding a combat manager */
+    private CombatManager _cm;
+    /* Adding an army manager to store mighty armies */
+    public GameObject ArmyContainer;
+
     void Start()
     {
+        Army attackingArmy = Army.CreateMyArmy(); /* create army for testing */
+        attackingArmy.Start();
+        attackingArmy.addUnitToArmy(Unit.CreateMyUnit().SetParams((int)UnitType.Swordsman, "")); /* create swordsman for testing */
+        attackingArmy.addUnitToArmy(Unit.CreateMyUnit().SetParams((int)UnitType.Swordsman, "")); /* create swordsman for testing */
+        Army defendingArmy = Army.CreateMyArmy();
+        defendingArmy.Start();
+        defendingArmy.addUnitToArmy(Unit.CreateMyUnit().SetParams((int)UnitType.Swordsman, "")); /* create swordsman for testing */
+        _cm = CombatManager.CreateMyCM(attackingArmy, defendingArmy);
+        _cm.ConductBattle();
+
         Generate();
     }
 
