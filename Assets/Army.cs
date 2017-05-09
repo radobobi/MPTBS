@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
+using System;
 
 public class Army : MonoBehaviour {
 
@@ -55,29 +56,45 @@ public class Army : MonoBehaviour {
     }
 
     public void removeUnitFromArmy(Unit aUnit) {
+        List<Unit> temp = new List<Unit>();
         if (aUnit.UnitRange == (int)UnitCombat.Melee) {
-            for (int i=0; i<_melee.Count; i++) {
-                if (aUnit == _melee[i]) {
-                    print("removing unit " + i + " from army");
-                    _melee.RemoveAt(i);
-                }
-            }
+            temp = _melee;
         }
         else if (aUnit.UnitRange == (int)UnitCombat.Ranged) {
-            for (int i = 0; i < _ranged.Count; i++) {
-                if (aUnit == _ranged[i]) {
-                    print("removing unit " + i + " from army");
-                    _ranged.RemoveAt(i);
-                }
-            }
+            temp = _ranged;
         }
         else if (aUnit.UnitRange == (int)UnitCombat.Magic) {
-            for (int i = 0; i < _magic.Count; i++) {
-                if (aUnit == _magic[i]) {
-                    print("removing unit " + i + " from army");
-                    _magic.RemoveAt(i);
-                }
+            temp = _magic;
+        }
+        for (int i = 0; i < temp.Count; i++) {
+            if (aUnit == temp[i]) {
+                print("Removing Unit#" + aUnit.MyID + " from army");
+                temp.RemoveAt(i);
             }
+        }
+    }
+
+    public void RoundCleanup() {
+        RoundCleanup((int)UnitCombat.Melee);
+        RoundCleanup((int)UnitCombat.Ranged);
+        RoundCleanup((int)UnitCombat.Magic);
+    }
+
+    private void RoundCleanup(int type) {
+        List<Unit> temp = new List<Unit>();
+        if (type== (int)UnitCombat.Melee) {
+            temp = _melee;
+        }
+        else if (type == (int)UnitCombat.Ranged) {
+            temp = _ranged;
+        }
+        else if (type == (int)UnitCombat.Magic) {
+            temp = _magic;
+        }
+
+        for (int i=0; i<temp.Count; i++) {
+            Unit aUnit = temp[i];
+            aUnit.ResetBlock();
         }
     }
 

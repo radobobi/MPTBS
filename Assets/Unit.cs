@@ -101,25 +101,28 @@ public class Unit : MonoBehaviour {
     public Unit SetParams(int unitType, string name) {
         _myType = unitType;
         _myID = UnitCount;
-        print("Unit #" + _myID);
-        if (_myType == (int)UnitType.Swordsman) {
-            _myName = name;
-            if (_myName != "") {
-                _myName = "Swordsman";
-            }
-            _maxHP = (int)BaseSwordsman.maxHP;
-            _currentHP = _maxHP;
-            _XP = 0;
-            _minDmg = (int)BaseSwordsman.minDmg;
-            _maxDmg = (int)BaseSwordsman.maxDmg;
-            _hitsPerTurn = (int)BaseSwordsman.hitsPerTurn;
-            _initiative = (int)BaseSwordsman.initiative;
-            _block = (int)BaseSwordsman.block;
-            _currentBlock = _block;
-            _accuracy = (int)BaseSwordsman.accuracy;
-            _unitRange = (int)BaseSwordsman.unitCombat;
+        UnitsStats theStats = UnitsStats.CreateUnitsStats();
+        _myName = name;
+        if (_myName == "") {
+            _myName = theStats.AllStats[_myType + 1][(int)StatsOrder.UnitName];
         }
+        Int32.TryParse(theStats.AllStats[_myType + 1][(int)StatsOrder.MaxHP], out _maxHP);
+        _currentHP = _maxHP;
+        _XP = 0;
+        Int32.TryParse(theStats.AllStats[_myType + 1][(int)StatsOrder.MinDmg], out _minDmg);
+        Int32.TryParse(theStats.AllStats[_myType + 1][(int)StatsOrder.MaxDmg], out _maxDmg);
+        Int32.TryParse(theStats.AllStats[_myType + 1][(int)StatsOrder.HitsPerTurn], out _hitsPerTurn);
+        Int32.TryParse(theStats.AllStats[_myType + 1][(int)StatsOrder.Initiative], out _initiative);
+        Int32.TryParse(theStats.AllStats[_myType + 1][(int)StatsOrder.Block], out _block);
+        _currentBlock = _block;
+        float.TryParse(theStats.AllStats[_myType + 1][(int)StatsOrder.Accuracy], out _accuracy);
+        Int32.TryParse(theStats.AllStats[_myType + 1][(int)StatsOrder.UnitCombat], out _unitRange);
+
         return this;
+    }
+
+    public void ResetBlock() {
+        _currentBlock = _block;
     }
 
     /* select a random target from the possible group of targets. Melee units can only target the closest row of units (so they target melee first then ranged then magic). */
@@ -157,22 +160,16 @@ public class Unit : MonoBehaviour {
     }
 
     public bool applyDmgFrom(Unit aUnit, String _log) {
-        _log += " and dealt ";
         int damageToTake;
         int reducedDamage;
         for (int i = 1; i <= aUnit.HitsPerTurn; i++) {
             damageToTake = UnityEngine.Random.Range(aUnit.MinDmg, aUnit.MaxDmg + 1);
-            reducedDamage = Math.Max(damageToTake - _currentBlock, 0);
-            if (_currentBlock > 0) { _currentBlock--; } /* each hit reduces block by 1 until the round is over */
+            reducedDamage = Math.Max(damageToTake - _currentBlock, 1);
             _currentHP = Math.Max(0, _currentHP - reducedDamage);
             _log += damageToTake;
-            if (i != _hitsPerTurn) {
-                _log += ", ";
-            }
-            print("dealt " + reducedDamage + " damage");
-            print("left enemy (Unit#" + _myID + ") with " + _currentHP + " hp");
+            print("(Unit#" + aUnit.MyID + "-" + aUnit.MyName + ") dealt " + reducedDamage + "(" + damageToTake + "-" + _currentBlock + ") damage and left enemy (Unit#" + _myID + "-" + _myName + ") with " + _currentHP + " hp");
+            if (_currentBlock > 0) { _currentBlock--; } /* each hit reduces block by 1 until the round is over */
         }
-        _log += " damage, leaving them with " + _currentHP + " HP ";
         if (_currentHP <= 0) {
             return true;
         }

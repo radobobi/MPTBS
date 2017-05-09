@@ -16,15 +16,17 @@ public enum UnitType {
     LENGTH = 3,
 }
 
-public enum BaseSwordsman {
-    maxHP = 25,
-    minDmg = 5,
-    maxDmg = 7,
-    hitsPerTurn = 1,
-    initiative = 2,
-    block = 1,
-    accuracy = 100,
-    unitCombat = UnitCombat.Melee,
+public enum StatsOrder {
+    UnitName = 0,
+    MaxHP = 1,
+    MinDmg = 2,
+    MaxDmg = 3,
+    HitsPerTurn = 4,
+    Initiative = 5,
+    Block = 6,
+    Accuracy = 7,
+    UnitCombat = 8,
+    LENGTH = 9,
 }
 
 public class CONSTANTS : MonoBehaviour {

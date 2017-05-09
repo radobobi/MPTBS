@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
+using System;
 
 public class CombatManager : MonoBehaviour {
 
@@ -27,8 +28,6 @@ public class CombatManager : MonoBehaviour {
 
     // Use this for initialization
     public void Start() {
-        _attackers = new Army();
-        _defenders = new Army();
         _battleOver = false;
     }
 
@@ -45,16 +44,23 @@ public class CombatManager : MonoBehaviour {
         _battleOver = false;
 
         while (!_battleOver && _round < 100) {
-            /*print("*** ROUND " + _round + " ***");*/
+            print("*** ROUND " + _round + " ***");
             _log += "\n" + "*** ROUND " + _round + " ***";
 
             ConductRange((int)UnitCombat.Magic);
             ConductRange((int)UnitCombat.Ranged);
             ConductRange((int)UnitCombat.Melee);
 
+            RoundCleanup();
             ++_round;
         }
-        print(_log);
+        print("Battle Is Over");
+        /*print(_log);*/
+    }
+
+    private void RoundCleanup() {
+        _attackers.RoundCleanup();
+        _defenders.RoundCleanup();
     }
 
     private void ConductRange(int unitRange) {
