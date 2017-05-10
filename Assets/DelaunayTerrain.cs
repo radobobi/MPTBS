@@ -3,6 +3,9 @@ using UnityEngine;
 using TriangleNet.Geometry;
 using TriangleNet.Topology;
 using TriangleNet.Voronoi;
+using System;
+using System.IO;
+using System.Linq;
 
 public class DelaunayTerrain : MonoBehaviour
 {
@@ -58,8 +61,21 @@ public class DelaunayTerrain : MonoBehaviour
     private HalfEdge[] halfedges;
     private VoronoiFace[] faces;
 
-    void Start()
-    {
+    /* Adding a combat manager */
+    private CombatManager _cm;
+
+    void Start() {
+        UnitsStats setUpStats = UnitsStats.CreateUnitsStats();
+        Army attackingArmy = Army.CreateMyArmy(); /* create army for testing */
+        attackingArmy.Start();
+        attackingArmy.addUnitToArmy(Unit.CreateMyUnit().SetParams((int)UnitType.Swordsman, "")); /* create swordsman for testing */
+        attackingArmy.addUnitToArmy(Unit.CreateMyUnit().SetParams((int)UnitType.Swordsman, "")); /* create swordsman for testing */
+        Army defendingArmy = Army.CreateMyArmy();
+        defendingArmy.Start();
+        defendingArmy.addUnitToArmy(Unit.CreateMyUnit().SetParams((int)UnitType.Swordsman, "")); /* create swordsman for testing */
+        defendingArmy.addUnitToArmy(Unit.CreateMyUnit().SetParams((int)UnitType.Archer, "")); /* create swordsman for testing */
+        _cm = CombatManager.CreateMyCM(attackingArmy, defendingArmy);
+        _cm.ConductBattle();
         Generate();
     }
 
@@ -73,13 +89,13 @@ public class DelaunayTerrain : MonoBehaviour
 
         for (int i = 0; i < octaves; i++)
         {
-            seed[i] = Random.Range(0.0f, 100.0f);
+            seed[i] = UnityEngine.Random.Range(0.0f, 100.0f);
         }
 
         Polygon polygon = new Polygon();
         for (int i = 0; i < randomPoints; i++)
         {
-            polygon.Add(new Vertex(Random.Range(0.0f, xsize), Random.Range(0.0f, ysize)));
+            polygon.Add(new Vertex(UnityEngine.Random.Range(0.0f, xsize), UnityEngine.Random.Range(0.0f, ysize)));
         }
 
         TriangleNet.Meshing.ConstraintOptions options = new TriangleNet.Meshing.ConstraintOptions() { ConformingDelaunay = true };
