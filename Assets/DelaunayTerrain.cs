@@ -9,7 +9,7 @@ using System.Linq;
 
 public class DelaunayTerrain : MonoBehaviour
 {
-    struct HalfEdge
+    public struct HalfEdge
     {
         public int id;
         public int twin_id;
@@ -18,7 +18,7 @@ public class DelaunayTerrain : MonoBehaviour
         public int face;
     }
 
-    struct VoronoiFace
+    public struct VoronoiFace
     {
         public int id;
         public float origin_x;
@@ -57,9 +57,10 @@ public class DelaunayTerrain : MonoBehaviour
     // TraingleNet mesh.
     private TriangleNet.Topology.DCEL.DcelMesh mesh2 = null;
 
-    private Vector3[] vertices;
-    private HalfEdge[] halfedges;
-    private VoronoiFace[] faces;
+    public Vector3[] vertices;
+    public HalfEdge[] halfedges;
+    public VoronoiFace[] faces;
+    public FaceManager[] faces_managers;
 
     /* Adding a combat manager */
     private CombatManager _cm;
@@ -113,6 +114,7 @@ public class DelaunayTerrain : MonoBehaviour
         DrawFaceLabels();
         GenerateVertexSpheres();
         GenerateFaceCenterSpheres();
+        PopulateFacesManagers();
     }
 
     public void ObtainVerticesEdgesAndFaces()
@@ -216,6 +218,7 @@ public class DelaunayTerrain : MonoBehaviour
 
             faces[i].mesh = chunkMesh;
             faces[i].chunk = chunk;
+            AssignVoronoiFace(faces[i], chunk.GetComponent<FaceManager>());
         }
 
         print("SUCCESSFULLY GENERATED MESH!");
@@ -508,14 +511,21 @@ public class DelaunayTerrain : MonoBehaviour
         // Reassign face1 neighbors.
         for (int i = 0; i < faces[ind_face1].neighbors.Count; ++i)
         {
+            //faces[ind_face2].neighbors.Add(faces[ind_face1].neighbors[i]);
+
             if (faces[ind_face1].neighbors[i] >= 0)
             {
-                VoronoiFace face = faces[faces[ind_face1].neighbors[i]];
-                face.neighbors.Remove(ind_face1);
-                face.neighbors.Remove(ind_face2);
-                face.neighbors.Add(ind_face2);
+                //VoronoiFace face = faces[faces[ind_face1].neighbors[i]];
+                faces[faces[ind_face1].neighbors[i]].neighbors.Remove(ind_face1);
+                faces[faces[ind_face1].neighbors[i]].neighbors.Remove(ind_face2);
+                faces[faces[ind_face1].neighbors[i]].neighbors.Add(ind_face2);
+                faces[ind_face2].neighbors.Add(faces[ind_face1].neighbors[i]);
             }
         }
+        
+        // Remove self-reference that appears twice.
+        faces[ind_face2].neighbors.Remove(ind_face2);
+        faces[ind_face2].neighbors.Remove(ind_face2);
 
         Destroy(faces[ind_face1].chunk.gameObject);
         Destroy(faces[ind_face2].chunk.gameObject);
@@ -525,6 +535,8 @@ public class DelaunayTerrain : MonoBehaviour
 
         faces[ind_face2].mesh = chunkMesh;
         faces[ind_face1].mesh = chunkMesh;
+        AssignVoronoiFace(faces[ind_face2], chunk.GetComponent<FaceManager>());
+        //AssignVoronoiFace(faces[ind_face1], chunk.GetComponent<FaceManager>());
 
         print("MERGED FACE " + ind_face1.ToString() + " AND FACE " + ind_face2.ToString() + ".");
     }
@@ -551,6 +563,25 @@ public class DelaunayTerrain : MonoBehaviour
             //chunk.transform.localPosition = Vector3.zero;
             chunk.transform.localPosition = new Vector3(faces[i].origin_x, faces[i].origin_y, 0);
             chunk.gameObject.GetComponent<MeshRenderer>().material.color = Color.green;
+        }
+    }
+
+    private void AssignVoronoiFace(VoronoiFace face_struct, FaceManager face_manager)
+    {
+        face_manager.id = face_struct.id;
+        face_manager.origin_x = face_struct.origin_x;
+        face_manager.origin_y = face_struct.origin_y;
+        face_manager.half_edges = face_struct.half_edges;
+        face_manager.neighbors_ids = face_struct.neighbors;
+    }
+
+    private void PopulateFacesManagers()
+    {
+        faces_managers = new FaceManager[faces.Length];
+
+        for(int i=0; i<faces.Length; ++i)
+        {
+            faces_managers[i] = faces[i].chunk.GetComponent<FaceManager>();
         }
     }
 }
