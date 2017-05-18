@@ -62,17 +62,19 @@ public class DelaunayTerrain : MonoBehaviour
     private CombatManager _cm;
 
     void Start() {
+        
         UnitsStats setUpStats = UnitsStats.CreateUnitsStats();
-        Army attackingArmy = Army.CreateMyArmy(); /* create army for testing */
+        Army attackingArmy = Army.CreateMyArmy(); 
         attackingArmy.Start();
-        attackingArmy.addUnitToArmy(Unit.CreateMyUnit().SetParams((int)UnitType.Swordsman, "")); /* create swordsman for testing */
-        attackingArmy.addUnitToArmy(Unit.CreateMyUnit().SetParams((int)UnitType.Swordsman, "")); /* create swordsman for testing */
+        attackingArmy.addUnitToArmy(Unit.CreateMyUnit().SetParams((int)UnitType.Swordsman, ""));
+        attackingArmy.addUnitToArmy(Unit.CreateMyUnit().SetParams((int)UnitType.Swordsman, ""));
         Army defendingArmy = Army.CreateMyArmy();
         defendingArmy.Start();
-        defendingArmy.addUnitToArmy(Unit.CreateMyUnit().SetParams((int)UnitType.Swordsman, "")); /* create swordsman for testing */
-        defendingArmy.addUnitToArmy(Unit.CreateMyUnit().SetParams((int)UnitType.Archer, "")); /* create swordsman for testing */
+        defendingArmy.addUnitToArmy(Unit.CreateMyUnit().SetParams((int)UnitType.Swordsman, ""));
+        defendingArmy.addUnitToArmy(Unit.CreateMyUnit().SetParams((int)UnitType.Archer, ""));
         _cm = CombatManager.CreateMyCM(attackingArmy, defendingArmy);
         _cm.ConductBattle();
+        
 
         GenerateMap();
     }
@@ -101,6 +103,7 @@ public class DelaunayTerrain : MonoBehaviour
         TriangleNet.Meshing.ConstraintOptions options = new TriangleNet.Meshing.ConstraintOptions() { ConformingDelaunay = true };
         TriangleNet.Mesh mesh = (TriangleNet.Mesh)polygon.Triangulate(options);
         // Generate Voronoi Tesselation from Delauney triangulation. 
+        //mesh2 = (TriangleNet.Topology.DCEL.DcelMesh)(new StandardVoronoi(mesh, new TriangleNet.Geometry.Rectangle(0f, 0f, (float)xsize, (float)ysize)));
         mesh2 = (TriangleNet.Topology.DCEL.DcelMesh)(new BoundedVoronoi(mesh));
 
         // Post-processing and object-generation.
@@ -170,6 +173,11 @@ public class DelaunayTerrain : MonoBehaviour
     {
         for (int i = 0; i < faces.Length; ++i)
         {
+            // Skip if face area is 0.
+            if(ComputeFaceArea(i) < float.Epsilon)
+            {
+                continue;
+            }
             VoronoiFace current_face = faces[i];
             List<int> triangles = new List<int>();
 
@@ -366,7 +374,6 @@ public class DelaunayTerrain : MonoBehaviour
         {
             VoronoiFace face_i = faces[i];
             float area = ComputeFaceArea(i);
-            //print(area);
 
             if(area < MIN_FACE_AREA)
             {
@@ -424,7 +431,6 @@ public class DelaunayTerrain : MonoBehaviour
     // Assign all neighbors of face1 to face2.
     private void MergeFaces(int ind_face1, int ind_face2)
     {
-        print(ind_face1.ToString() + "; " + ind_face2.ToString());
         Mesh mesh1 = faces[ind_face1].mesh;
         Mesh mesh2 = faces[ind_face2].mesh;
 
@@ -500,9 +506,6 @@ public class DelaunayTerrain : MonoBehaviour
             }
             else
             {
-                //print("UNASSIGNING HALFEDGES " + he.id.ToString() + " AND " + halfedges[he.twin_id].id.ToString() + ".");
-                //print("EDGE " + he.id.ToString() + " FACE=" + he.face.ToString());
-                //print("EDGE " + halfedges[he.twin_id].id.ToString() + " FACE=" + halfedges[he.twin_id].face.ToString());
                 faces[ind_face2].half_edges.Remove(halfedges[he.twin_id]);
                 halfedges[he.id].face = -1;
                 halfedges[he.twin_id].face = -1;
@@ -535,8 +538,6 @@ public class DelaunayTerrain : MonoBehaviour
         faces[ind_face2].mesh = chunkMesh;
         faces[ind_face1].mesh = chunkMesh;
         AssignVoronoiFace(faces[ind_face2], chunk.GetComponent<FaceManager>());
-
-        //print("MERGED FACE " + ind_face1.ToString() + " AND FACE " + ind_face2.ToString() + ".");
     }
 
     // Generates a sphere object used to draw vertices.
@@ -582,7 +583,10 @@ public class DelaunayTerrain : MonoBehaviour
 
         for(int i=0; i<faces.Length; ++i)
         {
-            faces_managers[i] = faces[i].chunk.GetComponent<FaceManager>();
+            if (faces[i].chunk != null)
+            {
+                faces_managers[i] = faces[i].chunk.GetComponent<FaceManager>();
+            }
         }
     }
 }
