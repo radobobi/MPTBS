@@ -25,6 +25,7 @@ public class DelaunayTerrain : MonoBehaviour
         public Transform chunk;
     }
 
+    private static float EPSILON = 0.000000001f;
     public float MIN_EDGE_LENGTH = 0.1f;
     public float MIN_FACE_AREA = 2f;
 
@@ -62,7 +63,7 @@ public class DelaunayTerrain : MonoBehaviour
     private CombatManager _cm;
 
     void Start() {
-        
+        /*
         UnitsStats setUpStats = UnitsStats.CreateUnitsStats();
         Army attackingArmy = Army.CreateMyArmy(); 
         attackingArmy.Start();
@@ -74,7 +75,7 @@ public class DelaunayTerrain : MonoBehaviour
         defendingArmy.addUnitToArmy(Unit.CreateMyUnit().SetParams((int)UnitType.Archer, ""));
         _cm = CombatManager.CreateMyCM(attackingArmy, defendingArmy);
         _cm.ConductBattle();
-        
+        */
 
         GenerateMap();
     }
@@ -117,7 +118,7 @@ public class DelaunayTerrain : MonoBehaviour
         DrawEdges();
         DrawEdgeLabels();
         DrawFaceLabels();
-        GenerateVertexSpheres();
+        //GenerateVertexSpheres();
         GenerateFaceCenterSpheres();   
     }
 
@@ -174,10 +175,8 @@ public class DelaunayTerrain : MonoBehaviour
         for (int i = 0; i < faces.Length; ++i)
         {
             // Skip if face area is 0.
-            if(ComputeFaceArea(i) < float.Epsilon)
-            {
-                continue;
-            }
+            float area = ComputeFaceArea(i);
+            
             VoronoiFace current_face = faces[i];
             List<int> triangles = new List<int>();
 
@@ -218,7 +217,12 @@ public class DelaunayTerrain : MonoBehaviour
 
             Transform chunk = Instantiate<Transform>(chunkPrefab, transform.position, transform.rotation);
             chunk.GetComponent<MeshFilter>().mesh = chunkMesh;
-            chunk.GetComponent<MeshCollider>().sharedMesh = chunkMesh;
+
+            if (area >= EPSILON)
+            {
+                chunk.GetComponent<MeshCollider>().sharedMesh = chunkMesh;
+            }
+            
             chunk.rotation = new Quaternion(0.707f, 0, 0, -0.707f);
             chunk.transform.parent = transform;
             chunk.gameObject.AddComponent<MapClickDetector>();
@@ -377,6 +381,12 @@ public class DelaunayTerrain : MonoBehaviour
 
             if(area < MIN_FACE_AREA)
             {
+                // FIX THIS.
+                if(face_i.neighbors.Count == 0)
+                {
+                    continue;
+                }
+
                 // Iterate over neighbors, find one with smallest area.
                 int current_smallest_area_face_index = face_i.neighbors[0];
                 float current_smallest_area = ComputeFaceArea(face_i.neighbors[0]);
@@ -392,7 +402,7 @@ public class DelaunayTerrain : MonoBehaviour
                 }
 
                 // Merge faces with the neighbor of least area.
-                if (current_smallest_area_face_index > 0)
+                if (current_smallest_area_face_index >= 0)
                 {
                     MergeFaces(i, current_smallest_area_face_index);
                 }
@@ -431,6 +441,8 @@ public class DelaunayTerrain : MonoBehaviour
     // Assign all neighbors of face1 to face2.
     private void MergeFaces(int ind_face1, int ind_face2)
     {
+        print(ind_face1 + ", " + ind_face2);
+
         Mesh mesh1 = faces[ind_face1].mesh;
         Mesh mesh2 = faces[ind_face2].mesh;
 
@@ -500,12 +512,16 @@ public class DelaunayTerrain : MonoBehaviour
         {
             HalfEdge he = faces[ind_face1].half_edges[i];
 
+            print("Checking half-edge " + he.id + ", belonging to face " + halfedges[he.twin_id].face.ToString());
+
             if (halfedges[he.twin_id].face != ind_face2) {
-                he.face = ind_face2;
+                //he.face = ind_face2;
+                halfedges[he.id].face = ind_face2;
                 faces[ind_face2].half_edges.Add(halfedges[he.id]);
             }
             else
             {
+                print("Removing half-edge " + he.id.ToString() + "; twin of " + he.twin_id.ToString());
                 faces[ind_face2].half_edges.Remove(halfedges[he.twin_id]);
                 halfedges[he.id].face = -1;
                 halfedges[he.twin_id].face = -1;
@@ -532,11 +548,11 @@ public class DelaunayTerrain : MonoBehaviour
         Destroy(faces[ind_face1].chunk.gameObject);
         Destroy(faces[ind_face2].chunk.gameObject);
 
-        faces[ind_face1].chunk = chunk;
+        //faces[ind_face1].chunk = chunk;
         faces[ind_face2].chunk = chunk;
 
         faces[ind_face2].mesh = chunkMesh;
-        faces[ind_face1].mesh = chunkMesh;
+        //faces[ind_face1].mesh = chunkMesh;
         AssignVoronoiFace(faces[ind_face2], chunk.GetComponent<FaceManager>());
     }
 
