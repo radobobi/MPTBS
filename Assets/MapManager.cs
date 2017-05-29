@@ -56,6 +56,7 @@ public class MapManager : MonoBehaviour
         for(int i=0; i<current_face.neighbors_ids.Count; ++i) {
             if (current_face.neighbors_ids[i] >= 0)
             {
+                //print("Getting neighbor " + current_face.neighbors_ids[i]);
                 face_managers[current_face.neighbors_ids[i]].GetComponent<MeshRenderer>().material.color = neighbor;
             }
         }

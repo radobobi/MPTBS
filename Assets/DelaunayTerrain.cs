@@ -23,9 +23,12 @@ public class DelaunayTerrain : MonoBehaviour
         public List<int> neighbors;
         public Mesh mesh;
         public Transform chunk;
+        public bool merged;
+        public float area;
     }
 
     private static float EPSILON = 0.000000001f;
+    private static float MAX_MERGING_ITERATIONS = 10;
     public float MIN_EDGE_LENGTH = 0.1f;
     public float MIN_FACE_AREA = 2f;
 
@@ -152,6 +155,7 @@ public class DelaunayTerrain : MonoBehaviour
 
         for (int indf = 0; indf < mesh2.Faces.Count; ++indf)
         {
+            faces[indf].merged = false;
             faces[indf].origin_x = (float)mesh2.Faces[indf].generator.X;
             faces[indf].origin_y = (float)mesh2.Faces[indf].generator.Y;
             faces[indf].id = mesh2.Faces[indf].ID;
@@ -174,8 +178,9 @@ public class DelaunayTerrain : MonoBehaviour
     {
         for (int i = 0; i < faces.Length; ++i)
         {
-            // Skip if face area is 0.
-            float area = ComputeFaceArea(i);
+            // Skip if face area is 0..
+            faces[i].area = ComputeFaceArea(i);
+            //float area = ComputeFaceArea(i);
             
             VoronoiFace current_face = faces[i];
             List<int> triangles = new List<int>();
@@ -218,7 +223,7 @@ public class DelaunayTerrain : MonoBehaviour
             Transform chunk = Instantiate<Transform>(chunkPrefab, transform.position, transform.rotation);
             chunk.GetComponent<MeshFilter>().mesh = chunkMesh;
 
-            if (area >= EPSILON)
+            if (faces[i].area >= EPSILON)
             {
                 chunk.GetComponent<MeshCollider>().sharedMesh = chunkMesh;
             }
@@ -229,8 +234,9 @@ public class DelaunayTerrain : MonoBehaviour
             chunk.gameObject.GetComponent<MeshRenderer>().material.color = Color.red;
 
             faces[i].mesh = chunkMesh;
-            faces[i].chunk = chunk;
+            faces[i].chunk = chunk;            
             AssignVoronoiFace(faces[i], chunk.GetComponent<FaceManager>());
+            
         }
 
         print("SUCCESSFULLY GENERATED MESH!");
@@ -374,40 +380,74 @@ public class DelaunayTerrain : MonoBehaviour
     // Iterate over faces. Identify small ones. Merge with neighbors.
     private void MergeSmallFaces()
     {
-        for(int i=0; i<faces.Length; ++i)
-        {
-            VoronoiFace face_i = faces[i];
-            float area = ComputeFaceArea(i);
+        bool merged_faces = false;
+        int iterations = 0;
 
-            if(area < MIN_FACE_AREA)
+        do
+        {
+            merged_faces = false;
+            print("Face merge iteration " + iterations.ToString());
+            ++iterations;
+
+            for (int i = 0; i < faces.Length; ++i)
             {
-                // FIX THIS.
-                if(face_i.neighbors.Count == 0)
+                //print(i);
+
+                VoronoiFace face_i = faces[i];
+                if(face_i.merged)
                 {
+                    //print("FACE ALREADY MERGED.");
                     continue;
                 }
 
-                // Iterate over neighbors, find one with smallest area.
-                int current_smallest_area_face_index = face_i.neighbors[0];
-                float current_smallest_area = ComputeFaceArea(face_i.neighbors[0]);
-                for(int j=1; j<face_i.neighbors.Count; ++j)
-                {
-                    int current_face_index = face_i.neighbors[j];
-                    float current_face_area = ComputeFaceArea(face_i.neighbors[j]);
+                //float area = ComputeFaceArea(i);
+                float area = face_i.area;
 
-                    if(((current_face_area < current_smallest_area || current_smallest_area < 0) && current_face_area > 0))
+                if (area < MIN_FACE_AREA)
+                {
+                    // FIX THIS.
+                    if (face_i.neighbors.Count == 0)
                     {
-                        current_smallest_area_face_index = current_face_index;
+                        //print("NO NEIGHBORS, PROCEEDING.");
+                        continue;
+                    }
+
+                    // Iterate over neighbors, find one with smallest area.
+                    int current_smallest_area_face_index = face_i.neighbors[0];
+                    //float current_smallest_area = ComputeFaceArea(face_i.neighbors[0]);
+                    float current_smallest_area = (face_i.neighbors[0] != -1 ) ? faces[face_i.neighbors[0]].area : -1f;
+                    for (int j = 1; j < face_i.neighbors.Count; ++j)
+                    {
+                        int current_face_index = face_i.neighbors[j];
+                        //float current_face_area = ComputeFaceArea(face_i.neighbors[j]);
+                        float current_face_area = (face_i.neighbors[j] != -1) ? faces[face_i.neighbors[j]].area : -1f;
+
+                        if (((current_face_area < current_smallest_area || current_smallest_area < 0) && current_face_area > 0))
+                        {
+                            current_smallest_area_face_index = current_face_index;
+                        }
+                    }
+
+                    // Merge faces with the neighbor of least area.
+                    if (current_smallest_area_face_index >= 0)
+                    {
+                        print("Merging " + i + ", " + current_smallest_area_face_index);
+                        MergeFaces(i, current_smallest_area_face_index);
+                        merged_faces = true;
+                    }
+                    else
+                    {
+                        //print("NO NEIGHBOR WITH SMALL AREA FOUND.");
                     }
                 }
-
-                // Merge faces with the neighbor of least area.
-                if (current_smallest_area_face_index >= 0)
+                else
                 {
-                    MergeFaces(i, current_smallest_area_face_index);
+                    //print("Area = " + area + " too large. Bigger than " + MIN_FACE_AREA + ".");
                 }
             }
-        }
+        } while (merged_faces && iterations < MAX_MERGING_ITERATIONS);
+
+        print("COMPLETED MERGING FACES.");
     }
 
     // Computes face area by iterating over the composing triangles.
@@ -441,8 +481,6 @@ public class DelaunayTerrain : MonoBehaviour
     // Assign all neighbors of face1 to face2.
     private void MergeFaces(int ind_face1, int ind_face2)
     {
-        print(ind_face1 + ", " + ind_face2);
-
         Mesh mesh1 = faces[ind_face1].mesh;
         Mesh mesh2 = faces[ind_face2].mesh;
 
@@ -512,7 +550,7 @@ public class DelaunayTerrain : MonoBehaviour
         {
             HalfEdge he = faces[ind_face1].half_edges[i];
 
-            print("Checking half-edge " + he.id + ", belonging to face " + halfedges[he.twin_id].face.ToString());
+            //print("Checking half-edge " + he.id + ", belonging to face " + halfedges[he.twin_id].face.ToString());
 
             if (halfedges[he.twin_id].face != ind_face2) {
                 //he.face = ind_face2;
@@ -521,12 +559,17 @@ public class DelaunayTerrain : MonoBehaviour
             }
             else
             {
-                print("Removing half-edge " + he.id.ToString() + "; twin of " + he.twin_id.ToString());
+                //print("Removing half-edge " + he.id.ToString() + "; twin of " + he.twin_id.ToString());
                 faces[ind_face2].half_edges.Remove(halfedges[he.twin_id]);
                 halfedges[he.id].face = -1;
                 halfedges[he.twin_id].face = -1;
             }
         }
+
+        //if (ind_face1 == 99)
+        //{
+        //    print("Doing face 99.");
+        //}
 
         // Reassign face1 neighbors.
         for (int i = 0; i < faces[ind_face1].neighbors.Count; ++i)
@@ -537,6 +580,7 @@ public class DelaunayTerrain : MonoBehaviour
                 faces[faces[ind_face1].neighbors[i]].neighbors.Remove(ind_face1);
                 faces[faces[ind_face1].neighbors[i]].neighbors.Remove(ind_face2);
                 faces[faces[ind_face1].neighbors[i]].neighbors.Add(ind_face2);
+                faces[ind_face2].neighbors.Remove(faces[ind_face1].neighbors[i]);
                 faces[ind_face2].neighbors.Add(faces[ind_face1].neighbors[i]);
             }
         }
@@ -548,11 +592,13 @@ public class DelaunayTerrain : MonoBehaviour
         Destroy(faces[ind_face1].chunk.gameObject);
         Destroy(faces[ind_face2].chunk.gameObject);
 
-        //faces[ind_face1].chunk = chunk;
         faces[ind_face2].chunk = chunk;
-
         faces[ind_face2].mesh = chunkMesh;
-        //faces[ind_face1].mesh = chunkMesh;
+
+        faces[ind_face1].merged = true;
+        faces[ind_face2].area += faces[ind_face1].area;
+        faces[ind_face1].area = 0f;
+
         AssignVoronoiFace(faces[ind_face2], chunk.GetComponent<FaceManager>());
     }
 
@@ -589,6 +635,8 @@ public class DelaunayTerrain : MonoBehaviour
         face_manager.origin_y = face_struct.origin_y;
         face_manager.half_edges = face_struct.half_edges;
         face_manager.neighbors_ids = face_struct.neighbors;
+        face_manager.area = face_struct.area;
+        face_manager.merged = face_struct.merged;
     }
 
     // Populates an array with references to the FaceManager objects.

@@ -9,6 +9,8 @@ public class FaceManager : MonoBehaviour {
     public float origin_y;
     public List<DelaunayTerrain.HalfEdge> half_edges;
     public List<int> neighbors_ids;
+    public float area;
+    public bool merged;
     //public List<FaceManager> neighbors;
     //public Mesh mesh;
     //public Transform chunk;
