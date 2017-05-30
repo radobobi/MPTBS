@@ -81,6 +81,11 @@ public class Unit : MonoBehaviour {
         get { return _unitRange; }
     }
 
+    protected int _regen;
+    public int Regen {
+        get { return _regen; }
+    }
+
     private static GameObject unitObj;
     public static GameObject UnitObj {
         get {
@@ -117,11 +122,13 @@ public class Unit : MonoBehaviour {
         _currentBlock = _block;
         float.TryParse(theStats.AllStats[_myType + 1][(int)StatsOrder.Accuracy], out _accuracy);
         Int32.TryParse(theStats.AllStats[_myType + 1][(int)StatsOrder.UnitCombat], out _unitRange);
+        Int32.TryParse(theStats.AllStats[_myType + 1][(int)StatsOrder.Regen], out _regen);
 
         return this;
     }
 
-    public void ResetBlock() {
+    public void RoundCleanup() {
+        _currentHP = _currentHP + _regen;
         _currentBlock = _block;
     }
 

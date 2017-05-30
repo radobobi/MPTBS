@@ -73,7 +73,8 @@ public class DelaunayTerrain : MonoBehaviour
         Army defendingArmy = Army.CreateMyArmy();
         defendingArmy.Start();
         defendingArmy.addUnitToArmy(Unit.CreateMyUnit().SetParams((int)UnitType.Swordsman, "")); /* create swordsman for testing */
-        defendingArmy.addUnitToArmy(Unit.CreateMyUnit().SetParams((int)UnitType.Archer, "")); /* create swordsman for testing */
+        defendingArmy.addUnitToArmy(Unit.CreateMyUnit().SetParams((int)UnitType.Archer, "")); /* create archer for testing */
+        defendingArmy.addUnitToArmy(Unit.CreateMyUnit().SetParams((int)UnitType.Mage, "")); /* create mage for testing */
         _cm = CombatManager.CreateMyCM(attackingArmy, defendingArmy);
         _cm.ConductBattle();
         Generate();

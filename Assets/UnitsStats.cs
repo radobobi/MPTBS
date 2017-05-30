@@ -36,7 +36,7 @@ public class UnitsStats : MonoBehaviour {
     private static void readUnitStatsFile() {
         _allStats = new List<List<string>>();
         int counter = 0;
-        using (var fs = File.OpenRead(@"Assets/Units/UnitStats.txt"))
+        using (var fs = File.OpenRead(@"Assets/Units/UnitsStats.csv"))
         using (var reader = new StreamReader(fs)) {
             while (!reader.EndOfStream) {
                 var line = reader.ReadLine();

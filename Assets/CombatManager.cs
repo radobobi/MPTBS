@@ -47,9 +47,15 @@ public class CombatManager : MonoBehaviour {
             print("*** ROUND " + _round + " ***");
             _log += "\n" + "*** ROUND " + _round + " ***";
 
-            ConductRange((int)UnitCombat.Magic);
-            ConductRange((int)UnitCombat.Ranged);
-            ConductRange((int)UnitCombat.Melee);
+            if (!_battleOver) {
+                ConductRange((int)UnitCombat.Magic);
+            }
+            if (!_battleOver) {
+                ConductRange((int)UnitCombat.Ranged);
+            }
+            if (!_battleOver) {
+                ConductRange((int)UnitCombat.Melee);
+            }
 
             RoundCleanup();
             ++_round;

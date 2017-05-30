@@ -12,7 +12,7 @@ public enum UnitCombat {
 public enum UnitType {
     Swordsman = 0,
     Archer = 1,
-    Sorceress = 2,
+    Mage = 2,
     LENGTH = 3,
 }
 
@@ -26,7 +26,8 @@ public enum StatsOrder {
     Block = 6,
     Accuracy = 7,
     UnitCombat = 8,
-    LENGTH = 9,
+    Regen = 9,
+    LENGTH = 10,
 }
 
 public class CONSTANTS : MonoBehaviour {

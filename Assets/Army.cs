@@ -94,7 +94,7 @@ public class Army : MonoBehaviour {
 
         for (int i=0; i<temp.Count; i++) {
             Unit aUnit = temp[i];
-            aUnit.ResetBlock();
+            aUnit.RoundCleanup();
         }
     }
 
