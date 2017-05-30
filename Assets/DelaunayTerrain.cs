@@ -311,6 +311,23 @@ public class DelaunayTerrain : MonoBehaviour {
         HalfEdge he = halfedges[halfedge_index];
         HalfEdge he_twin = halfedges[he.twin_id];
 
+        // Check that edge is only edge uniting the two faces.
+        int he_face = he.face;
+        int he_twin_face = he_twin.face;
+
+        if(he_face < 0 | he_twin_face < 0 )
+        {
+            return;
+        }
+
+        foreach(HalfEdge halfEdge in faces[he_face].half_edges)
+        {
+            if(halfEdge.id != he.id && halfEdge.face == he_face)
+            {
+                return;
+            }
+        }
+
         if (he.face >= 0 && he_twin.face >= 0) {
             faces[he_twin.face].neighbors.Remove(faces[he.face].id);
             faces[he.face].neighbors.Remove(faces[he_twin.face].id);
