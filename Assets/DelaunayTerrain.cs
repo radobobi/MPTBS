@@ -3,10 +3,8 @@ using UnityEngine;
 using TriangleNet.Geometry;
 using TriangleNet.Voronoi;
 
-public class DelaunayTerrain : MonoBehaviour
-{
-    public struct HalfEdge
-    {
+public class DelaunayTerrain : MonoBehaviour {
+    public struct HalfEdge {
         public int id;
         public int twin_id;
         public int start;
@@ -14,8 +12,7 @@ public class DelaunayTerrain : MonoBehaviour
         public int face;
     }
 
-    public struct VoronoiFace
-    {
+    public struct VoronoiFace {
         public int id;
         public float origin_x;
         public float origin_y;
@@ -74,14 +71,8 @@ public class DelaunayTerrain : MonoBehaviour
         attackingArmy.addUnitToArmy(Unit.CreateMyUnit().SetParams((int)UnitType.Swordsman, ""));
         Army defendingArmy = Army.CreateMyArmy();
         defendingArmy.Start();
-<<<<<<< HEAD
-        defendingArmy.addUnitToArmy(Unit.CreateMyUnit().SetParams((int)UnitType.Swordsman, "")); /* create swordsman for testing */
-        defendingArmy.addUnitToArmy(Unit.CreateMyUnit().SetParams((int)UnitType.Archer, "")); /* create archer for testing */
-        defendingArmy.addUnitToArmy(Unit.CreateMyUnit().SetParams((int)UnitType.Mage, "")); /* create mage for testing */
-=======
         defendingArmy.addUnitToArmy(Unit.CreateMyUnit().SetParams((int)UnitType.Swordsman, ""));
         defendingArmy.addUnitToArmy(Unit.CreateMyUnit().SetParams((int)UnitType.Archer, ""));
->>>>>>> origin/master
         _cm = CombatManager.CreateMyCM(attackingArmy, defendingArmy);
         _cm.ConductBattle();
         */
@@ -89,8 +80,7 @@ public class DelaunayTerrain : MonoBehaviour
         GenerateMap();
     }
 
-    public virtual void GenerateMap()
-    {
+    public virtual void GenerateMap() {
         print("GENERATING TRANGULATION.");
 
         UnityEngine.Random.InitState(0);
@@ -98,14 +88,12 @@ public class DelaunayTerrain : MonoBehaviour
         // What does this do?
         float[] seed = new float[octaves];
 
-        for (int i = 0; i < octaves; i++)
-        {
+        for (int i = 0; i < octaves; i++) {
             seed[i] = UnityEngine.Random.Range(0.0f, 100.0f);
         }
 
         Polygon polygon = new Polygon();
-        for (int i = 0; i < randomPoints; i++)
-        {
+        for (int i = 0; i < randomPoints; i++) {
             polygon.Add(new Vertex(UnityEngine.Random.Range(0.0f, xsize), UnityEngine.Random.Range(0.0f, ysize)));
         }
 
@@ -128,28 +116,25 @@ public class DelaunayTerrain : MonoBehaviour
         DrawEdgeLabels();
         DrawFaceLabels();
         //GenerateVertexSpheres();
-        GenerateFaceCenterSpheres();   
+        GenerateFaceCenterSpheres();
     }
 
     // Extracts edge and vertex info from TriangletNet Delauney data structure.
-    public void ObtainVerticesEdgesAndFaces()
-    {
+    public void ObtainVerticesEdgesAndFaces() {
         print("CONVERTING TRIANGLENET OUTPUT TO UNITY MESH.");
 
         TriangleNet.Topology.DCEL.DcelMesh mesh2 = this.mesh2;
 
         vertices = new Vector3[mesh2.Vertices.Count];
 
-        for (int indver = 0; indver < mesh2.Vertices.Count; ++indver)
-        {
-            vertices[indver].x = (float) mesh2.Vertices[indver].X;
-            vertices[indver].z = (float) mesh2.Vertices[indver].Y;
+        for (int indver = 0; indver < mesh2.Vertices.Count; ++indver) {
+            vertices[indver].x = (float)mesh2.Vertices[indver].X;
+            vertices[indver].z = (float)mesh2.Vertices[indver].Y;
         }
 
         halfedges = new HalfEdge[mesh2.HalfEdges.Count];
 
-        for (int indhe = 0; indhe < mesh2.HalfEdges.Count; ++indhe)
-        {
+        for (int indhe = 0; indhe < mesh2.HalfEdges.Count; ++indhe) {
             halfedges[indhe].id = mesh2.HalfEdges[indhe].ID;
             halfedges[indhe].twin_id = mesh2.HalfEdges[indhe].Twin.ID;
             halfedges[indhe].start = (int)mesh2.HalfEdges[indhe].Origin.id;
@@ -159,8 +144,7 @@ public class DelaunayTerrain : MonoBehaviour
 
         faces = new VoronoiFace[mesh2.Faces.Count];
 
-        for (int indf = 0; indf < mesh2.Faces.Count; ++indf)
-        {
+        for (int indf = 0; indf < mesh2.Faces.Count; ++indf) {
             faces[indf].merged = false;
             faces[indf].origin_x = (float)mesh2.Faces[indf].generator.X;
             faces[indf].origin_y = (float)mesh2.Faces[indf].generator.Y;
@@ -168,10 +152,8 @@ public class DelaunayTerrain : MonoBehaviour
 
             faces[indf].half_edges = new List<HalfEdge>();
             faces[indf].neighbors = new List<int>();
-            for (int indhe = 0; indhe < halfedges.Length; ++indhe)
-            {
-                if (halfedges[indhe].face == mesh2.Faces[indf].ID)
-                {
+            for (int indhe = 0; indhe < halfedges.Length; ++indhe) {
+                if (halfedges[indhe].face == mesh2.Faces[indf].ID) {
                     faces[indf].half_edges.Add(halfedges[indhe]);
                     faces[indf].neighbors.Add(halfedges[halfedges[indhe].twin_id].face);
                 }
@@ -180,14 +162,12 @@ public class DelaunayTerrain : MonoBehaviour
     }
 
     // Generates meshes from vertices and edges.
-    private void GenerateMesh()
-    {
-        for (int i = 0; i < faces.Length; ++i)
-        {
+    private void GenerateMesh() {
+        for (int i = 0; i < faces.Length; ++i) {
             // Skip if face area is 0..
             faces[i].area = ComputeFaceArea(i);
             //float area = ComputeFaceArea(i);
-            
+
             VoronoiFace current_face = faces[i];
             List<int> triangles = new List<int>();
 
@@ -196,8 +176,7 @@ public class DelaunayTerrain : MonoBehaviour
             List<Vector3> normals = new List<Vector3>();
             List<Vector2> uvs = new List<Vector2>();
 
-            foreach (HalfEdge he in current_face.half_edges)
-            {
+            foreach (HalfEdge he in current_face.half_edges) {
                 Vector3 v0 = faceCenter;
                 Vector3 v1 = vertices[he.start];
                 Vector3 v2 = vertices[he.end];
@@ -229,32 +208,28 @@ public class DelaunayTerrain : MonoBehaviour
             Transform chunk = Instantiate<Transform>(chunkPrefab, transform.position, transform.rotation);
             chunk.GetComponent<MeshFilter>().mesh = chunkMesh;
 
-            if (faces[i].area >= EPSILON)
-            {
+            if (faces[i].area >= EPSILON) {
                 chunk.GetComponent<MeshCollider>().sharedMesh = chunkMesh;
             }
-            
+
             chunk.rotation = new Quaternion(0.707f, 0, 0, -0.707f);
             chunk.transform.parent = transform;
             chunk.gameObject.AddComponent<MapClickDetector>();
             chunk.gameObject.GetComponent<MeshRenderer>().material.color = Color.red;
 
             faces[i].mesh = chunkMesh;
-            faces[i].chunk = chunk;            
+            faces[i].chunk = chunk;
             AssignVoronoiFace(faces[i], chunk.GetComponent<FaceManager>());
-            
+
         }
 
         print("SUCCESSFULLY GENERATED MESH!");
     }
 
     // Draws edges of Voronoi cells.
-    private void DrawEdges()
-    {
-        for (int i = 0; i < halfedges.Length; ++i)
-        {
-            if (halfedges[i].face >= 0)
-            {
+    private void DrawEdges() {
+        for (int i = 0; i < halfedges.Length; ++i) {
+            if (halfedges[i].face >= 0) {
                 Vector3 start = vertices[halfedges[i].start];
                 Vector3 end = vertices[halfedges[i].end];
                 DrawLine(new Vector3(start.x, start.z, 0), new Vector3(end.x, end.z, 0), Color.blue, transform);
@@ -263,34 +238,27 @@ public class DelaunayTerrain : MonoBehaviour
     }
 
     // Draws edge labels.
-    private void DrawEdgeLabels()
-    {
-        for (int i = 0; i < halfedges.Length; ++i)
-        {
-            if (halfedges[i].face >= 0)
-            {
+    private void DrawEdgeLabels() {
+        for (int i = 0; i < halfedges.Length; ++i) {
+            if (halfedges[i].face >= 0) {
                 Vector3 start = vertices[halfedges[i].start];
                 Vector3 end = vertices[halfedges[i].end];
-                DrawText(new Vector3((start.x+end.x)/2, (start.z + end.z) / 2, 0), i.ToString(), Color.black);
+                DrawText(new Vector3((start.x + end.x) / 2, (start.z + end.z) / 2, 0), i.ToString(), Color.black);
             }
         }
     }
 
     // Draws face labels.
-    private void DrawFaceLabels()
-    {
-        for (int i = 0; i < faces.Length; ++i)
-        {
-            if (faces[i].id >= 0)
-            {
+    private void DrawFaceLabels() {
+        for (int i = 0; i < faces.Length; ++i) {
+            if (faces[i].id >= 0) {
                 DrawText(new Vector3(faces[i].origin_x, faces[i].origin_y, 0), i.ToString(), Color.green);
             }
         }
     }
 
     // Function for drawing lines. (Used to draw edges.)
-    void DrawLine(Vector3 start, Vector3 end, Color color, Transform transform)
-    {
+    void DrawLine(Vector3 start, Vector3 end, Color color, Transform transform) {
         GameObject myLine = new GameObject("Line " + start.ToString() + "--" + end.ToString());
         myLine.transform.parent = transform;
         myLine.transform.localPosition = Vector3.zero;
@@ -306,8 +274,7 @@ public class DelaunayTerrain : MonoBehaviour
     }
 
     // Function for drawing text. (Used to draw labels.)
-    void DrawText(Vector3 loc, string txt, Color clr)
-    {
+    void DrawText(Vector3 loc, string txt, Color clr) {
         Transform text = Instantiate<Transform>(textPrefab, transform.position, transform.rotation);
         text.transform.parent = transform;
         text.transform.localPosition = loc;
@@ -320,19 +287,16 @@ public class DelaunayTerrain : MonoBehaviour
     // Iterate over edges.
     // Bring ends of shorts edges together.
     // Be careful with neibhors.
-    private void RemoveShortEdges()
-    {
+    private void RemoveShortEdges() {
         Vector3 start;
         Vector3 end;
         float edge_length;
 
-        for(int i=0; i < this.halfedges.Length; ++i)
-        {
+        for (int i = 0; i < this.halfedges.Length; ++i) {
             start = vertices[halfedges[i].start];
             end = vertices[halfedges[i].end];
             edge_length = Vector3.Distance(start, end);
-            if(edge_length < MIN_EDGE_LENGTH && edge_length > float.Epsilon)
-            {
+            if (edge_length < MIN_EDGE_LENGTH && edge_length > float.Epsilon) {
                 vertices[halfedges[i].start] = vertices[halfedges[i].end];
                 RemoveNeighborsForEdge(i);
             }
@@ -343,38 +307,32 @@ public class DelaunayTerrain : MonoBehaviour
 
     // Makes the two faces neighboring a given edge not be each other's neighbors.
     // Used in the course of uniting faces.
-    private void RemoveNeighborsForEdge(int halfedge_index)
-    {
+    private void RemoveNeighborsForEdge(int halfedge_index) {
         HalfEdge he = halfedges[halfedge_index];
         HalfEdge he_twin = halfedges[he.twin_id];
 
-        if (he.face >= 0 && he_twin.face >= 0)
-        {
+        if (he.face >= 0 && he_twin.face >= 0) {
             faces[he_twin.face].neighbors.Remove(faces[he.face].id);
             faces[he.face].neighbors.Remove(faces[he_twin.face].id);
         }
     }
 
     // Recomputes the centers of faces.
-    private void RecomputeFacesCenters()
-    {
-        for(int i=0; i < faces.Length; ++i)
-        {
+    private void RecomputeFacesCenters() {
+        for (int i = 0; i < faces.Length; ++i) {
             RecomputeFaceCenter(i);
         }
     }
 
     // Finds the center of a face by averaging the vertices.
-    private void RecomputeFaceCenter(int face_index)
-    {
+    private void RecomputeFaceCenter(int face_index) {
         VoronoiFace f = faces[face_index];
 
         // Assuming the face is convex, we can just put the center at the 
         // average of the vertices.
 
         Vector3 new_center = Vector3.zero;
-        for(int i=0; i<f.half_edges.Count; ++i)
-        {
+        for (int i = 0; i < f.half_edges.Count; ++i) {
             new_center += vertices[f.half_edges[i].start];
         }
         new_center = new_center / f.half_edges.Count;
@@ -384,24 +342,20 @@ public class DelaunayTerrain : MonoBehaviour
     }
 
     // Iterate over faces. Identify small ones. Merge with neighbors.
-    private void MergeSmallFaces()
-    {
+    private void MergeSmallFaces() {
         bool merged_faces = false;
         int iterations = 0;
 
-        do
-        {
+        do {
             merged_faces = false;
             print("Face merge iteration " + iterations.ToString());
             ++iterations;
 
-            for (int i = 0; i < faces.Length; ++i)
-            {
+            for (int i = 0; i < faces.Length; ++i) {
                 //print(i);
 
                 VoronoiFace face_i = faces[i];
-                if(face_i.merged)
-                {
+                if (face_i.merged) {
                     //print("FACE ALREADY MERGED.");
                     continue;
                 }
@@ -409,11 +363,9 @@ public class DelaunayTerrain : MonoBehaviour
                 //float area = ComputeFaceArea(i);
                 float area = face_i.area;
 
-                if (area < MIN_FACE_AREA)
-                {
+                if (area < MIN_FACE_AREA) {
                     // FIX THIS.
-                    if (face_i.neighbors.Count == 0)
-                    {
+                    if (face_i.neighbors.Count == 0) {
                         //print("NO NEIGHBORS, PROCEEDING.");
                         continue;
                     }
@@ -421,33 +373,28 @@ public class DelaunayTerrain : MonoBehaviour
                     // Iterate over neighbors, find one with smallest area.
                     int current_smallest_area_face_index = face_i.neighbors[0];
                     //float current_smallest_area = ComputeFaceArea(face_i.neighbors[0]);
-                    float current_smallest_area = (face_i.neighbors[0] != -1 ) ? faces[face_i.neighbors[0]].area : -1f;
-                    for (int j = 1; j < face_i.neighbors.Count; ++j)
-                    {
+                    float current_smallest_area = (face_i.neighbors[0] != -1) ? faces[face_i.neighbors[0]].area : -1f;
+                    for (int j = 1; j < face_i.neighbors.Count; ++j) {
                         int current_face_index = face_i.neighbors[j];
                         //float current_face_area = ComputeFaceArea(face_i.neighbors[j]);
                         float current_face_area = (face_i.neighbors[j] != -1) ? faces[face_i.neighbors[j]].area : -1f;
 
-                        if (((current_face_area < current_smallest_area || current_smallest_area < 0) && current_face_area > 0))
-                        {
+                        if (((current_face_area < current_smallest_area || current_smallest_area < 0) && current_face_area > 0)) {
                             current_smallest_area_face_index = current_face_index;
                         }
                     }
 
                     // Merge faces with the neighbor of least area.
-                    if (current_smallest_area_face_index >= 0)
-                    {
+                    if (current_smallest_area_face_index >= 0) {
                         print("Merging " + i + ", " + current_smallest_area_face_index);
                         MergeFaces(i, current_smallest_area_face_index);
                         merged_faces = true;
                     }
-                    else
-                    {
+                    else {
                         //print("NO NEIGHBOR WITH SMALL AREA FOUND.");
                     }
                 }
-                else
-                {
+                else {
                     //print("Area = " + area + " too large. Bigger than " + MIN_FACE_AREA + ".");
                 }
             }
@@ -457,36 +404,31 @@ public class DelaunayTerrain : MonoBehaviour
     }
 
     // Computes face area by iterating over the composing triangles.
-    private float ComputeFaceArea(int face_index)
-    {
-        if(face_index < 0)
-        {
+    private float ComputeFaceArea(int face_index) {
+        if (face_index < 0) {
             return -1;
         }
 
         VoronoiFace f = faces[face_index];
         float area = 0f;
 
-        for(int i=0; i<f.half_edges.Count; ++i)
-        {
+        for (int i = 0; i < f.half_edges.Count; ++i) {
             HalfEdge he = f.half_edges[i];
-            area += TriangleArea(vertices[he.start], vertices[he.end], new Vector3(f.origin_x,0,f.origin_y));
+            area += TriangleArea(vertices[he.start], vertices[he.end], new Vector3(f.origin_x, 0, f.origin_y));
         }
 
         return area;
     }
 
     // Computes a triangle's area.
-    private float TriangleArea(Vector3 a, Vector3 b, Vector3 c)
-    {
-        return Vector3.Magnitude(Vector3.Cross((b-a), (c-a)))/2f;
+    private float TriangleArea(Vector3 a, Vector3 b, Vector3 c) {
+        return Vector3.Magnitude(Vector3.Cross((b - a), (c - a))) / 2f;
     }
 
     // Merge mesh of face1 with face2.
     // Assign all edges of face1 to face2.
     // Assign all neighbors of face1 to face2.
-    private void MergeFaces(int ind_face1, int ind_face2)
-    {
+    private void MergeFaces(int ind_face1, int ind_face2) {
         Mesh mesh1 = faces[ind_face1].mesh;
         Mesh mesh2 = faces[ind_face2].mesh;
 
@@ -496,42 +438,34 @@ public class DelaunayTerrain : MonoBehaviour
         List<Vector2> uvs = new List<Vector2>();
 
         // Vertices
-        for (int i = 0; i < mesh1.vertices.Length; ++i)
-        {
+        for (int i = 0; i < mesh1.vertices.Length; ++i) {
             faceVertices.Add(mesh1.vertices[i]);
         }
-        for (int i = 0; i < mesh2.vertices.Length; ++i)
-        {
+        for (int i = 0; i < mesh2.vertices.Length; ++i) {
             faceVertices.Add(mesh2.vertices[i]);
         }
 
         // Normals
-        for (int i = 0; i < mesh1.normals.Length; ++i)
-        {
+        for (int i = 0; i < mesh1.normals.Length; ++i) {
             normals.Add(mesh1.normals[i]);
         }
-        for (int i = 0; i < mesh2.normals.Length; ++i)
-        {
+        for (int i = 0; i < mesh2.normals.Length; ++i) {
             normals.Add(mesh2.normals[i]);
         }
 
         // uvs
-        for (int i = 0; i < mesh1.uv.Length; ++i)
-        {
+        for (int i = 0; i < mesh1.uv.Length; ++i) {
             uvs.Add(mesh1.uv[i]);
         }
-        for (int i = 0; i < mesh2.uv.Length; ++i)
-        {
+        for (int i = 0; i < mesh2.uv.Length; ++i) {
             uvs.Add(mesh2.uv[i]);
         }
 
         // triangles
-        for (int i = 0; i < mesh1.triangles.Length; ++i)
-        {
+        for (int i = 0; i < mesh1.triangles.Length; ++i) {
             triangles.Add(mesh1.triangles[i]);
         }
-        for (int i = 0; i < mesh2.triangles.Length; ++i)
-        {
+        for (int i = 0; i < mesh2.triangles.Length; ++i) {
             triangles.Add(mesh1.vertices.Length + mesh2.triangles[i]);
         }
 
@@ -552,8 +486,7 @@ public class DelaunayTerrain : MonoBehaviour
         chunk.gameObject.GetComponent<MeshRenderer>().material.color = Color.red;
 
         // Reassign face1 halfedges.
-        for(int i=0; i<faces[ind_face1].half_edges.Count; ++i)
-        {
+        for (int i = 0; i < faces[ind_face1].half_edges.Count; ++i) {
             HalfEdge he = faces[ind_face1].half_edges[i];
 
             //print("Checking half-edge " + he.id + ", belonging to face " + halfedges[he.twin_id].face.ToString());
@@ -563,8 +496,7 @@ public class DelaunayTerrain : MonoBehaviour
                 halfedges[he.id].face = ind_face2;
                 faces[ind_face2].half_edges.Add(halfedges[he.id]);
             }
-            else
-            {
+            else {
                 //print("Removing half-edge " + he.id.ToString() + "; twin of " + he.twin_id.ToString());
                 faces[ind_face2].half_edges.Remove(halfedges[he.twin_id]);
                 halfedges[he.id].face = -1;
@@ -578,11 +510,9 @@ public class DelaunayTerrain : MonoBehaviour
         //}
 
         // Reassign face1 neighbors.
-        for (int i = 0; i < faces[ind_face1].neighbors.Count; ++i)
-        {
+        for (int i = 0; i < faces[ind_face1].neighbors.Count; ++i) {
 
-            if (faces[ind_face1].neighbors[i] >= 0)
-            {
+            if (faces[ind_face1].neighbors[i] >= 0) {
                 faces[faces[ind_face1].neighbors[i]].neighbors.Remove(ind_face1);
                 faces[faces[ind_face1].neighbors[i]].neighbors.Remove(ind_face2);
                 faces[faces[ind_face1].neighbors[i]].neighbors.Add(ind_face2);
@@ -590,7 +520,7 @@ public class DelaunayTerrain : MonoBehaviour
                 faces[ind_face2].neighbors.Add(faces[ind_face1].neighbors[i]);
             }
         }
-        
+
         // Remove self-reference that appears twice.
         faces[ind_face2].neighbors.Remove(ind_face2);
         faces[ind_face2].neighbors.Remove(ind_face2);
@@ -609,22 +539,18 @@ public class DelaunayTerrain : MonoBehaviour
     }
 
     // Generates a sphere object used to draw vertices.
-    private void GenerateVertexSpheres()
-    {
-        for(int i=0; i<vertices.Length; ++i)
-        {
+    private void GenerateVertexSpheres() {
+        for (int i = 0; i < vertices.Length; ++i) {
             Transform chunk = Instantiate<Transform>(spherePrefab, transform.position, transform.rotation);
-            
+
             chunk.transform.parent = transform;
             chunk.transform.localPosition = new Vector3(vertices[i].x, vertices[i].z, 0);
         }
     }
 
     // Generates a sphere object used to draw face centers.
-    private void GenerateFaceCenterSpheres()
-    {
-        for (int i = 0; i < faces.Length; ++i)
-        {
+    private void GenerateFaceCenterSpheres() {
+        for (int i = 0; i < faces.Length; ++i) {
             Transform chunk = Instantiate<Transform>(spherePrefab, transform.position, transform.rotation);
 
             chunk.transform.parent = transform;
@@ -634,8 +560,7 @@ public class DelaunayTerrain : MonoBehaviour
     }
 
     // Assigns the VoronoiFace struct to the FaceManager object belonging to the object containing the mesh.
-    private void AssignVoronoiFace(VoronoiFace face_struct, FaceManager face_manager)
-    {
+    private void AssignVoronoiFace(VoronoiFace face_struct, FaceManager face_manager) {
         face_manager.id = face_struct.id;
         face_manager.origin_x = face_struct.origin_x;
         face_manager.origin_y = face_struct.origin_y;
@@ -647,14 +572,11 @@ public class DelaunayTerrain : MonoBehaviour
 
     // Populates an array with references to the FaceManager objects.
     // This is so that there exists a central reference to the FaceManager objects.
-    private void PopulateFacesManagers()
-    {
+    private void PopulateFacesManagers() {
         faces_managers = new FaceManager[faces.Length];
 
-        for(int i=0; i<faces.Length; ++i)
-        {
-            if (faces[i].chunk != null)
-            {
+        for (int i = 0; i < faces.Length; ++i) {
+            if (faces[i].chunk != null) {
                 faces_managers[i] = faces[i].chunk.GetComponent<FaceManager>();
             }
         }
