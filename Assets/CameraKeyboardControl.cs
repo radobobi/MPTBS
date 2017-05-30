@@ -37,12 +37,12 @@ public class CameraKeyboardControl : MonoBehaviour {
         if (Input.GetKey(KeyCode.Q))
         {
             zoom += zoom_delta;
-            //GameObject.Find("PlaneGenerator").transform.localScale = (new Vector3(1, 1, 1)) * zoom;
+            GameObject.Find("MapHolder").transform.localScale = (new Vector3(1, 1, 1)) * zoom;
         }
         if (Input.GetKey(KeyCode.E))
         {
             zoom -= zoom_delta;
-            //GameObject.Find("PlaneGenerator").transform.localScale = (new Vector3(1, 1, 1)) * zoom;
+            GameObject.Find("MapHolder").transform.localScale = (new Vector3(1, 1, 1)) * zoom;
         }
     }
 }

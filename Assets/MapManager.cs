@@ -2,10 +2,12 @@
 
 public class MapManager : MonoBehaviour
 {
-    Color normalColor = Color.red;
+    public GameObject mapHolder;
 
-    Color mouseDownColor = Color.green;
-    Color mouseEnterColor = Color.yellow;
+    private Color normalColor = Color.red;
+    private Color mouseDownColor = Color.green;
+    private Color mouseEnterColor = Color.yellow;
+    private Color neighbor = Color.cyan;
 
     // Use this for initialization
     void Start()
@@ -38,7 +40,7 @@ public class MapManager : MonoBehaviour
         //Debug.Log("Pointer Up: " + objClicked.name);
 
         MeshRenderer mr = objClicked.GetComponent<MeshRenderer>();
-        mr.material.color = normalColor; ;
+        mr.material.color = normalColor;
     }
 
     public void mapMouseEnter(GameObject objClicked)
@@ -47,7 +49,18 @@ public class MapManager : MonoBehaviour
 
         MeshRenderer mr = objClicked.GetComponent<MeshRenderer>();
         mr.material.color = mouseEnterColor;
-    }
+
+        FaceManager[] face_managers = mapHolder.GetComponent<DelaunayTerrain>().faces_managers;
+        FaceManager current_face = objClicked.GetComponent<FaceManager>();
+
+        for(int i=0; i<current_face.neighbors_ids.Count; ++i) {
+            if (current_face.neighbors_ids[i] >= 0)
+            {
+                //print("Getting neighbor " + current_face.neighbors_ids[i]);
+                face_managers[current_face.neighbors_ids[i]].GetComponent<MeshRenderer>().material.color = neighbor;
+            }
+        }
+}
 
     public void mapMouseExit(GameObject objClicked)
     {
@@ -55,5 +68,16 @@ public class MapManager : MonoBehaviour
 
         MeshRenderer mr = objClicked.GetComponent<MeshRenderer>();
         mr.material.color = normalColor;
+
+        FaceManager[] face_managers = mapHolder.GetComponent<DelaunayTerrain>().faces_managers;
+        FaceManager current_face = objClicked.GetComponent<FaceManager>();
+
+        for (int i = 0; i < current_face.neighbors_ids.Count; ++i)
+        {
+            if (current_face.neighbors_ids[i] >= 0)
+            {
+                face_managers[current_face.neighbors_ids[i]].GetComponent<MeshRenderer>().material.color = normalColor;
+            }
+        }
     }
 }
