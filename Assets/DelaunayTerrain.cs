@@ -58,6 +58,7 @@ public class DelaunayTerrain : MonoBehaviour
     private TriangleNet.Topology.DCEL.DcelMesh mesh2 = null;
 
     public Vector3[] vertices;
+    public float[] vertexHeights;
     public HalfEdge[] halfedges;
     public VoronoiFace[] faces;
     public FaceManager[] faces_managers;
@@ -89,13 +90,7 @@ public class DelaunayTerrain : MonoBehaviour
 
         UnityEngine.Random.InitState(0);
 
-        // What does this do?
-        float[] seed = new float[octaves];
 
-        for (int i = 0; i < octaves; i++)
-        {
-            seed[i] = UnityEngine.Random.Range(0.0f, 100.0f);
-        }
 
         Polygon polygon = new Polygon();
         for (int i = 0; i < randomPoints; i++)
@@ -112,6 +107,7 @@ public class DelaunayTerrain : MonoBehaviour
 
         // Post-processing and object-generation.
         ObtainVerticesEdgesAndFaces();
+        GeneratePerlinHeights();
         RemoveShortEdges();
         GenerateMesh();
         MergeSmallFaces();
@@ -139,6 +135,12 @@ public class DelaunayTerrain : MonoBehaviour
             vertices[indver].x = (float) mesh2.Vertices[indver].X;
             vertices[indver].z = (float) mesh2.Vertices[indver].Y;
         }
+
+        //vertexHeights = new float[vertices.Length];
+        //for (int i=0; i<vertices.Length; ++i)
+        //{
+        //    vertexHeights[i] = Mathf.PerlinNoise(vertices[i].x/ xsize, vertices[i].z/ysize);
+        //}
 
         halfedges = new HalfEdge[mesh2.HalfEdges.Count];
 
@@ -170,6 +172,42 @@ public class DelaunayTerrain : MonoBehaviour
                     faces[indf].neighbors.Add(halfedges[halfedges[indhe].twin_id].face);
                 }
             }
+        }
+    }
+
+    private void GeneratePerlinHeights()
+    {
+        // What does this do?
+        float[] seed = new float[octaves];
+
+        for (int i = 0; i < octaves; i++)
+        {
+            seed[i] = UnityEngine.Random.Range(0.0f, 100.0f);
+        }
+
+        vertexHeights = new float[vertices.Length];
+
+        // Sample perlin noise to get elevations
+        for (int i = 0; i < vertices.Length; ++i)
+        {
+            float elevation = 0.0f;
+            float amplitude = Mathf.Pow(persistence, octaves);
+            float frequency = 1.0f;
+            float maxVal = 0.0f;
+
+            for (int o = 0; o < octaves; o++)
+            {
+                float sample = (Mathf.PerlinNoise(
+                    seed[o] + (float)vertices[i].x * sampleSize / (float)xsize * frequency,
+                    seed[o] + (float)vertices[i].z * sampleSize / (float)ysize * frequency) - 0.5f) * amplitude;
+                elevation += sample;
+                maxVal += amplitude;
+                amplitude /= persistence;
+                frequency *= frequencyBase;
+            }
+
+            elevation = elevation / maxVal;
+            vertexHeights[i] = elevation;
         }
     }
 
