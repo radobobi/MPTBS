@@ -63,7 +63,7 @@ public class DelaunayTerrain : MonoBehaviour {
     private CombatManager _cm;
 
     void Start() {
-        /*
+        
         UnitsStats setUpStats = UnitsStats.CreateUnitsStats();
         Army attackingArmy = Army.CreateMyArmy(); 
         attackingArmy.Start();
@@ -75,7 +75,7 @@ public class DelaunayTerrain : MonoBehaviour {
         defendingArmy.addUnitToArmy(Unit.CreateMyUnit().SetParams((int)UnitType.Archer, ""));
         _cm = CombatManager.CreateMyCM(attackingArmy, defendingArmy);
         _cm.ConductBattle();
-        */
+        
 
         GenerateMap();
     }

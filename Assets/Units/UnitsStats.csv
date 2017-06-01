@@ -1,4 +1,4 @@
-UnitName,maxHP,minDmg,maxDmg,hitsPerTurn,initiative,block,accuracy,unitCombat,Regeneration
-Swordsman,25,5,7,1,2,3,1,0,0
-Archer,15,3,5,2,3,0,1,1,0
-Mage,10,8,10,1,1,0,1,2,0
+UnitName,maxHP,minDmg,maxDmg,hitsPerTurn,initiative,block,accuracy,unitCombat,Regeneration,Level
+Swordsman,25,5,7,1,2,3,1,0,0,1
+Archer,15,3,5,2,3,0,1,1,0,1
+Mage,10,8,10,1,1,0,1,2,0,1

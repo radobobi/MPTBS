@@ -27,7 +27,21 @@ public enum StatsOrder {
     Accuracy = 7,
     UnitCombat = 8,
     Regen = 9,
-    LENGTH = 10,
+    Level = 10,
+    LENGTH = 11,
+}
+
+public enum LevelUpOptions {
+    HPGain1 = 0,
+    HPGain2 = 1,
+    HPGain3 = 2,
+    DmgGain1 = 3,
+    InGain1 = 4,
+    InGain2 = 5,
+    BlockGain1 = 6,
+    RegenGain1 = 7,
+    APTGain1 = 8,
+    LENGTH = 9,
 }
 
 public class CONSTANTS : MonoBehaviour {

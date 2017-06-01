@@ -31,6 +31,11 @@ public class Unit : MonoBehaviour {
         set { _XP = value; }
     }
 
+    protected int _level;
+    public int Level {
+        get { return _level; }
+    }
+
     protected int _maxHP;
     public int MaxHP {
         get { return _maxHP; }
@@ -86,6 +91,16 @@ public class Unit : MonoBehaviour {
         get { return _regen; }
     }
 
+    protected int[] _lvlUps;
+    public int[] LvlUps {
+        get { return _lvlUps; }
+    }
+
+    protected int[] _lvlUpChoice;
+    public int[] LvlUpChoice {
+        get { return _lvlUpChoice; }
+    }
+
     private static GameObject unitObj;
     public static GameObject UnitObj {
         get {
@@ -123,6 +138,10 @@ public class Unit : MonoBehaviour {
         float.TryParse(theStats.AllStats[_myType + 1][(int)StatsOrder.Accuracy], out _accuracy);
         Int32.TryParse(theStats.AllStats[_myType + 1][(int)StatsOrder.UnitCombat], out _unitRange);
         Int32.TryParse(theStats.AllStats[_myType + 1][(int)StatsOrder.Regen], out _regen);
+        Int32.TryParse(theStats.AllStats[_myType + 1][(int)StatsOrder.Level], out _level);
+
+        _lvlUps = new int[(int)LevelUpOptions.LENGTH];
+        _lvlUpChoice = new int[2] { -1, -1};
 
         return this;
     }
@@ -130,6 +149,92 @@ public class Unit : MonoBehaviour {
     public void RoundCleanup() {
         _currentHP = _currentHP + _regen;
         _currentBlock = _block;
+        LevelUpCheck();
+    }
+
+    /* Let's randomly select 2 options for level up for the player to choose from */
+    public void LevelUpCheck() {
+        UnitsStats theStats = UnitsStats.CreateUnitsStats();
+        if (_level == 15 || (_lvlUpChoice[0] != -1 || _lvlUpChoice[1] != -1)) { return; }
+        if (_XP >= theStats.XPTable[_level]) {
+            int[] lvlOptions = new int[(int)LevelUpOptions.LENGTH];
+            int totalOptions = 0;
+            int i;
+            for (i=0; i < (int)LevelUpOptions.LENGTH; i++) {
+                if (theStats.AllLvlUps[i * 4 + 2, _myType] <= _level && (theStats.AllLvlUps[i * 4 + 3, _myType] > _level || theStats.AllLvlUps[i * 4 + 3, _myType] == 0)) {
+                    lvlOptions[i] = Math.Max(theStats.AllLvlUps[i * 4 + 1, _myType] - _lvlUps[i],0);
+                    totalOptions = totalOptions + lvlOptions[i];
+                }
+            }
+            int randomLvlOption = UnityEngine.Random.Range(1, totalOptions + 1);
+            int runningTotal = 0;
+            for (i = 0; i < (int)LevelUpOptions.LENGTH; i++) {
+                runningTotal = runningTotal + lvlOptions[i];
+                if (randomLvlOption <= runningTotal) { break; }
+            }
+            totalOptions = totalOptions - lvlOptions[i];
+            lvlOptions[i] = 0;
+            int j = i;
+            int counter = 0;
+            while (j == i && counter < 100) {
+                randomLvlOption = UnityEngine.Random.Range(1, totalOptions + 1);
+                runningTotal = 0;
+                for (j = 0; j < (int)LevelUpOptions.LENGTH; j++) {
+                    runningTotal = runningTotal + lvlOptions[j];
+                    if (randomLvlOption <= runningTotal) { break; }
+                }
+            }
+            if (counter == 100) {
+                j = -1;
+            }
+            /*print("Level Up Randomly Chosen between: " + i + " and " + j);*/
+            int randomLvl = UnityEngine.Random.Range(1, 3);
+            if (randomLvl == 1) {
+                LevelUpUnit(i);
+            }
+            else {
+                LevelUpUnit(j);
+            }
+        }
+    }
+
+    private void LevelUpUnit(int whichSkill) {
+        UnitsStats theStats = UnitsStats.CreateUnitsStats();
+        switch (whichSkill) {
+            case 0:
+            case 1:
+            case 2:
+                _maxHP = _maxHP + theStats.AllLvlUps[whichSkill * 4 + 0, _myType];
+                _currentHP = _currentHP + theStats.AllLvlUps[whichSkill * 4 + 0, _myType];
+                print("LEVEL UP - new max hp: " + _maxHP);
+                break;
+            case 3:
+                _minDmg = _minDmg + theStats.AllLvlUps[whichSkill * 4 + 0, _myType];
+                _maxDmg = _maxDmg + theStats.AllLvlUps[whichSkill * 4 + 0, _myType];
+                print("LEVEL UP - new min-max dmg: " + _minDmg + "-" + _maxDmg);
+                break;
+            case 4:
+            case 5:
+                _initiative = _initiative + theStats.AllLvlUps[whichSkill * 4 + 0, _myType];
+                print("LEVEL UP - new initiative: " + _initiative);
+                break;
+            case 6:
+                _block = _block + theStats.AllLvlUps[whichSkill * 4 + 0, _myType];
+                print("LEVEL UP - new block: " + _block);
+                break;
+            case 7:
+                _regen = _regen + theStats.AllLvlUps[whichSkill * 4 + 0, _myType];
+                print("LEVEL UP - new regen: " + _regen);
+                break;
+            case 8:
+                _hitsPerTurn = _hitsPerTurn + theStats.AllLvlUps[whichSkill * 4 + 0, _myType];
+                print("LEVEL UP - new APT: " + _hitsPerTurn);
+                break;
+            default:
+                break;
+        }
+        _lvlUps[whichSkill]++;
+        _level++;
     }
 
     /* select a random target from the possible group of targets. Melee units can only target the closest row of units (so they target melee first then ranged then magic). */
@@ -169,6 +274,8 @@ public class Unit : MonoBehaviour {
     public bool applyDmgFrom(Unit aUnit, String _log) {
         int damageToTake;
         int reducedDamage;
+        aUnit.XP = aUnit.XP + 5;
+        /*print("XP: " + aUnit.XP);*/
         for (int i = 1; i <= aUnit.HitsPerTurn; i++) {
             damageToTake = UnityEngine.Random.Range(aUnit.MinDmg, aUnit.MaxDmg + 1);
             reducedDamage = Math.Max(damageToTake - _currentBlock, 1);
