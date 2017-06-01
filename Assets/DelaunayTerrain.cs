@@ -44,6 +44,7 @@ public class DelaunayTerrain : MonoBehaviour {
     public int octaves = 8;
     public float frequencyBase = 2;
     public float persistence = 1.1f;
+    public float perlinOffset = 0.5f;
 
     // Prefab which is generated for each chunk of the mesh.
     public Transform chunkPrefab = null;
@@ -55,6 +56,7 @@ public class DelaunayTerrain : MonoBehaviour {
     private TriangleNet.Topology.DCEL.DcelMesh mesh2 = null;
 
     public Vector3[] vertices;
+    public float[] vertexHeights;
     public HalfEdge[] halfedges;
     public VoronoiFace[] faces;
     public FaceManager[] faces_managers;
@@ -107,6 +109,7 @@ public class DelaunayTerrain : MonoBehaviour {
         // Post-processing and object-generation.
         ObtainVerticesEdgesAndFaces();
         RemoveShortEdges();
+        GeneratePerlinHeights();
         GenerateMesh();
         MergeSmallFaces();
         PopulateFacesManagers();
@@ -215,7 +218,8 @@ public class DelaunayTerrain : MonoBehaviour {
             chunk.rotation = new Quaternion(0.707f, 0, 0, -0.707f);
             chunk.transform.parent = transform;
             chunk.gameObject.AddComponent<MapClickDetector>();
-            chunk.gameObject.GetComponent<MeshRenderer>().material.color = Color.red;
+            //chunk.gameObject.GetComponent<MeshRenderer>().material.color = Color.red;
+            chunk.gameObject.GetComponent<MeshRenderer>().material.color = HeightToColor(FaceHeight(i));
 
             faces[i].mesh = chunkMesh;
             faces[i].chunk = chunk;
@@ -224,6 +228,79 @@ public class DelaunayTerrain : MonoBehaviour {
         }
 
         print("SUCCESSFULLY GENERATED MESH!");
+    }
+
+    private float FaceHeight(int face_ind)
+    {
+        float sum = 0f;
+        int cnt = 0;
+
+        foreach(HalfEdge he in faces[face_ind].half_edges)
+        {
+            sum += vertexHeights[he.start];
+            sum += vertexHeights[he.end];
+            ++cnt;
+            ++cnt;
+        }
+
+        return (sum / cnt);
+    }
+
+    // May be worth moving this to a table.
+    private Color HeightToColor(float height)
+    {
+        if(height < 0)
+        {
+            return Color.blue;
+        }
+        else if(height >= 0 && height <0.3)
+        {
+            return Color.green;
+        }
+        else if(height >= 0.3 && height < 0.5)
+        {
+            return Color.Lerp(Color.yellow, Color.red, 0.5f);
+        }
+        else
+        {
+            return Color.Lerp(Color.white, Color.red, 0.1f);
+        }
+    }
+
+    private void GeneratePerlinHeights()
+    {
+        // What does this do?
+        float[] seed = new float[octaves];
+
+        for (int i = 0; i < octaves; i++)
+        {
+            seed[i] = UnityEngine.Random.Range(0.0f, 100.0f);
+        }
+
+        vertexHeights = new float[vertices.Length];
+
+        // Sample perlin noise to get elevations
+        for (int i = 0; i < vertices.Length; ++i)
+        {
+            float elevation = 0.0f;
+            float amplitude = Mathf.Pow(persistence, octaves);
+            float frequency = 1.0f;
+            float maxVal = 0.0f;
+
+            for (int o = 0; o < octaves; o++)
+            {
+                float sample = (Mathf.PerlinNoise(
+                    seed[o] + (float)vertices[i].x * sampleSize / ((float)xsize * frequency),
+                    seed[o] + (float)vertices[i].z * sampleSize / ((float)ysize * frequency)) - 0.5f) * amplitude;
+                elevation += sample;
+                maxVal += amplitude;
+                amplitude /= persistence;
+                frequency *= frequencyBase;
+            }
+
+            elevation = elevation / maxVal;
+            vertexHeights[i] = elevation;
+        }
     }
 
     // Draws edges of Voronoi cells.
@@ -500,7 +577,8 @@ public class DelaunayTerrain : MonoBehaviour {
         // Set correct rotation.
         chunk.rotation = new Quaternion(0.707f, 0, 0, -0.707f);
         chunk.gameObject.AddComponent<MapClickDetector>();
-        chunk.gameObject.GetComponent<MeshRenderer>().material.color = Color.red;
+        chunk.gameObject.GetComponent<MeshRenderer>().material.color = HeightToColor(FaceHeight(ind_face2));
+        //chunk.gameObject.GetComponent<MeshRenderer>().material.color = Color.red;
 
         // Reassign face1 halfedges.
         for (int i = 0; i < faces[ind_face1].half_edges.Count; ++i) {
