@@ -4,6 +4,15 @@ using TriangleNet.Geometry;
 using TriangleNet.Voronoi;
 
 public class DelaunayTerrain : MonoBehaviour {
+    private enum FaceMergingRule
+    {
+        SMALLEST_AREA_NEIGHBOR = 0,
+        LARGEST_EDGE_NEIGHBOR = 1,
+        LARGEST_AREA_NEIGHBOR = 2
+    }
+
+    private FaceMergingRule defaultFaceMergingRule = FaceMergingRule.LARGEST_AREA_NEIGHBOR;
+
     public struct HalfEdge {
         public int id;
         public int twin_id;
@@ -106,7 +115,7 @@ public class DelaunayTerrain : MonoBehaviour {
 
         // Post-processing and object-generation.
         ObtainVerticesEdgesAndFaces();
-        RemoveShortEdges();
+        //RemoveShortEdges();
         GenerateMesh();
         MergeSmallFaces();
         PopulateFacesManagers();
@@ -296,7 +305,7 @@ public class DelaunayTerrain : MonoBehaviour {
             start = vertices[halfedges[i].start];
             end = vertices[halfedges[i].end];
             edge_length = Vector3.Distance(start, end);
-            if (edge_length < MIN_EDGE_LENGTH && edge_length > float.Epsilon) {
+            if (edge_length < MIN_EDGE_LENGTH && edge_length > float.Epsilon) { 
                 vertices[halfedges[i].start] = vertices[halfedges[i].end];
                 RemoveNeighborsForEdge(i);
             }
@@ -308,9 +317,11 @@ public class DelaunayTerrain : MonoBehaviour {
     // Makes the two faces neighboring a given edge not be each other's neighbors.
     // Used in the course of uniting faces.
     private void RemoveNeighborsForEdge(int halfedge_index) {
+
+
         HalfEdge he = halfedges[halfedge_index];
         HalfEdge he_twin = halfedges[he.twin_id];
-
+   
         // Check that edge is only edge uniting the two faces.
         int he_face = he.face;
         int he_twin_face = he_twin.face;
@@ -322,12 +333,17 @@ public class DelaunayTerrain : MonoBehaviour {
 
         foreach(HalfEdge halfEdge in faces[he_face].half_edges)
         {
-            if(halfEdge.id != he.id && halfEdge.face == he_face)
+            // If (1) the current edge is not the original edge
+            // AND (2) the current edge's face is the same as the original edge's face
+            // AND (3) the current edge is a "real" edge (i.e. longer than min allowed length),
+            // THEN skip removing the neighbor.
+            if(halfEdge.id != he.id && halfEdge.face == he_face 
+                && Vector3.Distance(vertices[halfEdge.start],vertices[halfEdge.end]) > MIN_EDGE_LENGTH)
             {
-                return;
+                    return;
             }
         }
-
+        
         if (he.face >= 0 && he_twin.face >= 0) {
             faces[he_twin.face].neighbors.Remove(faces[he.face].id);
             faces[he.face].neighbors.Remove(faces[he_twin.face].id);
@@ -387,37 +403,134 @@ public class DelaunayTerrain : MonoBehaviour {
                         continue;
                     }
 
-                    // Iterate over neighbors, find one with smallest area.
-                    int current_smallest_area_face_index = face_i.neighbors[0];
-                    //float current_smallest_area = ComputeFaceArea(face_i.neighbors[0]);
-                    float current_smallest_area = (face_i.neighbors[0] != -1) ? faces[face_i.neighbors[0]].area : -1f;
-                    for (int j = 1; j < face_i.neighbors.Count; ++j) {
-                        int current_face_index = face_i.neighbors[j];
-                        //float current_face_area = ComputeFaceArea(face_i.neighbors[j]);
-                        float current_face_area = (face_i.neighbors[j] != -1) ? faces[face_i.neighbors[j]].area : -1f;
+                    int neighbor_to_merge_with = -1;
 
-                        if (((current_face_area < current_smallest_area || current_smallest_area < 0) && current_face_area > 0)) {
-                            current_smallest_area_face_index = current_face_index;
-                        }
+                    switch(defaultFaceMergingRule)
+                    {
+                        case FaceMergingRule.SMALLEST_AREA_NEIGHBOR:
+                            neighbor_to_merge_with = FindNeighborWithSmallestArea(i);
+                            break;
+                        case FaceMergingRule.LARGEST_AREA_NEIGHBOR:
+                            neighbor_to_merge_with = FindNeighborWithLargestArea(i);
+                            break;
+                        case FaceMergingRule.LARGEST_EDGE_NEIGHBOR:
+                            neighbor_to_merge_with = FindNeighborOnLongestEdge(i);
+                            break;
                     }
-
+                    
                     // Merge faces with the neighbor of least area.
-                    if (current_smallest_area_face_index >= 0) {
-                        print("Merging " + i + ", " + current_smallest_area_face_index);
-                        MergeFaces(i, current_smallest_area_face_index);
+                    if (neighbor_to_merge_with >= 0) {
+                        print("Merging " + i + ", " + neighbor_to_merge_with);
+                        MergeFaces(i, neighbor_to_merge_with);
                         merged_faces = true;
                     }
-                    else {
-                        //print("NO NEIGHBOR WITH SMALL AREA FOUND.");
-                    }
-                }
-                else {
-                    //print("Area = " + area + " too large. Bigger than " + MIN_FACE_AREA + ".");
                 }
             }
         } while (merged_faces && iterations < MAX_MERGING_ITERATIONS);
 
         print("COMPLETED MERGING FACES.");
+    }
+
+    // Returns neighbor of face_i that has smallest area.
+    private int FindNeighborWithSmallestArea(int face_ind)
+    {
+        VoronoiFace face_i = faces[face_ind];
+        //float area = ComputeFaceArea(i);
+        float area = face_i.area;
+
+        if (face_i.neighbors.Count == 0)
+        {
+            return -1;
+        }
+
+        // Iterate over neighbors, find one with smallest area.
+        int current_smallest_area_face_index = face_i.neighbors[0];
+        //float current_smallest_area = ComputeFaceArea(face_i.neighbors[0]);
+        float current_smallest_area = (face_i.neighbors[0] != -1) ? faces[face_i.neighbors[0]].area : -1f;
+        for (int j = 1; j < face_i.neighbors.Count; ++j)
+        {
+            int current_face_index = face_i.neighbors[j];
+            //float current_face_area = ComputeFaceArea(face_i.neighbors[j]);
+            float current_face_area = (face_i.neighbors[j] != -1) ? faces[face_i.neighbors[j]].area : -1f;
+
+            if (((current_face_area < current_smallest_area || current_smallest_area < 0) && current_face_area > 0))
+            {
+                current_smallest_area_face_index = current_face_index;
+            }
+        }
+
+        // Merge faces with the neighbor of least area.
+        if (current_smallest_area_face_index >= 0)
+        {
+            return current_smallest_area_face_index;
+        }
+
+        return -1;
+    }
+
+    // Returns neighbor of face_i that has largest area.
+    private int FindNeighborWithLargestArea(int face_ind)
+    {
+        VoronoiFace face_i = faces[face_ind];
+        //float area = ComputeFaceArea(i);
+        float area = face_i.area;
+
+        if (face_i.neighbors.Count == 0)
+        {
+            return -1;
+        }
+
+        // Iterate over neighbors, find one with largest area.
+        int current_largest_area_face_index = face_i.neighbors[0];
+        float current_largest_area = (face_i.neighbors[0] != -1) ? faces[face_i.neighbors[0]].area : -1f;
+        for (int j = 1; j < face_i.neighbors.Count; ++j)
+        {
+            int current_face_index = face_i.neighbors[j];
+            //float current_face_area = ComputeFaceArea(face_i.neighbors[j]);
+            float current_face_area = (face_i.neighbors[j] != -1) ? faces[face_i.neighbors[j]].area : -1f;
+
+            if (((current_face_area > current_largest_area || current_largest_area < 0) && current_face_area > 0))
+            {
+                current_largest_area_face_index = current_face_index;
+            }
+        }
+
+        // Merge faces with the neighbor of least area.
+        if (current_largest_area_face_index >= 0)
+        {
+            return current_largest_area_face_index;
+        }
+
+        return -1;
+    }
+
+    // Returns neighbor of face_i that has largest area.
+    private int FindNeighborOnLongestEdge(int face_ind)
+    {
+        VoronoiFace face_i = faces[face_ind];
+
+        if (face_i.neighbors.Count == 0)
+        {
+            return -1;
+        }
+
+        int current_neighbor_on_longest_edge_ind = -1;
+        float current_longest_edge_length = -1f;
+        foreach(HalfEdge he in face_i.half_edges)
+        {
+            float len = Vector3.Distance(vertices[he.start], vertices[he.end]);
+            if (len > current_longest_edge_length && he.twin_id > -1 && halfedges[he.twin_id].face > -1)
+            {
+                current_neighbor_on_longest_edge_ind = halfedges[he.twin_id].face;
+            }  
+        }
+
+        if(current_neighbor_on_longest_edge_ind > -1)
+        {
+            return current_neighbor_on_longest_edge_ind;
+        }
+
+        return -1;
     }
 
     // Computes face area by iterating over the composing triangles.
@@ -520,11 +633,6 @@ public class DelaunayTerrain : MonoBehaviour {
                 halfedges[he.twin_id].face = -1;
             }
         }
-
-        //if (ind_face1 == 99)
-        //{
-        //    print("Doing face 99.");
-        //}
 
         // Reassign face1 neighbors.
         for (int i = 0; i < faces[ind_face1].neighbors.Count; ++i) {
