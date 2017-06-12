@@ -11,6 +11,7 @@ public class FaceManager : MonoBehaviour {
     public List<int> neighbors_ids;
     public float area;
     public bool merged;
+    public float height;
     //public List<FaceManager> neighbors;
     //public Mesh mesh;
     //public Transform chunk;

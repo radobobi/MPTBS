@@ -11,7 +11,7 @@ public class DelaunayTerrain : MonoBehaviour {
         LARGEST_AREA_NEIGHBOR = 2
     }
 
-    private FaceMergingRule defaultFaceMergingRule = FaceMergingRule.LARGEST_AREA_NEIGHBOR;
+    private FaceMergingRule defaultFaceMergingRule = FaceMergingRule.LARGEST_EDGE_NEIGHBOR;
 
     public struct HalfEdge {
         public int id;
@@ -31,6 +31,7 @@ public class DelaunayTerrain : MonoBehaviour {
         public Transform chunk;
         public bool merged;
         public float area;
+        public float height;
     }
 
     private static float EPSILON = 0.000000001f;
@@ -38,9 +39,14 @@ public class DelaunayTerrain : MonoBehaviour {
     public float MIN_EDGE_LENGTH = 0.1f;
     public float MIN_FACE_AREA = 2f;
 
+    private static int PERLIN_ITERATIONS = 8;
+    private static int PERLIN_COMPRESSION_FACTOR = 8;
+    private static float PERLIN_OFFSET = 0.3f;
+
     // Maximum size of the terrain.
-    public int xsize = 10;
-    public int ysize = 10;
+    public int xsize = 32;
+    public int ysize = 32;
+    public int pixelsPerUnit = 32;
 
     // Number of random points to generate.
     public int randomPoints = 1000;
@@ -68,11 +74,17 @@ public class DelaunayTerrain : MonoBehaviour {
     public VoronoiFace[] faces;
     public FaceManager[] faces_managers;
 
+    private float[] Seeds = new float[PERLIN_ITERATIONS];
+
     /* Adding a combat manager */
     private CombatManager _cm;
 
     void Start() {
-        
+        for (int i = 0; i < PERLIN_ITERATIONS; i++)
+        {
+            Seeds[i] = UnityEngine.Random.Range(0.0f, 100.0f);
+        }
+
         UnitsStats setUpStats = UnitsStats.CreateUnitsStats();
         Army attackingArmy = Army.CreateMyArmy(); 
         attackingArmy.Start();
@@ -705,5 +717,59 @@ public class DelaunayTerrain : MonoBehaviour {
                 faces_managers[i] = faces[i].chunk.GetComponent<FaceManager>();
             }
         }
+    }
+
+    private float[,] GeneratePerlinHeights()
+    {
+        //float[] seed = new float[PERLIN_ITERATIONS];
+
+        
+
+        float[,] heightmap = new float[xsize* pixelsPerUnit, ysize* pixelsPerUnit];
+
+        // Sample perlin noise to get elevations
+        for (int i = 0; i < xsize* pixelsPerUnit; ++i)
+        {
+            for (int j = 0; j < ysize* pixelsPerUnit; ++j)
+            {
+                float elevation = ComputeSinglePerlinHeight(Seeds,
+                        (float)PERLIN_COMPRESSION_FACTOR * i / xsize * pixelsPerUnit,
+                        (float)PERLIN_COMPRESSION_FACTOR * j / xsize * pixelsPerUnit);
+
+                elevation = elevation / (2);
+                heightmap[i, j] = elevation;
+            }
+        }
+
+        return heightmap;
+    }
+
+    private float ComputeSinglePerlinHeight(float[] seeds, float x, float y)
+    {
+        float elevation = 0.0f;
+        for (int aplitude_power = 0; aplitude_power < PERLIN_ITERATIONS; aplitude_power++)
+        {
+            elevation += (Mathf.PerlinNoise(seeds[aplitude_power] + x, seeds[aplitude_power] + y) - PERLIN_OFFSET) *
+                Mathf.Pow(0.5f, aplitude_power);
+        }
+
+        return elevation;
+    }
+
+    private float GetAverageHeightOfVertices(int face_ind)
+    {
+        VoronoiFace f = faces[face_ind];
+
+        // Assuming the face is convex, we can just put the center at the 
+        // average of the vertices.
+
+        float height_sum = 0f;
+        for (int i = 0; i < f.half_edges.Count; ++i)
+        {
+            Vector3 current_vertex = vertices[f.half_edges[i].start];
+            height_sum += ComputeSinglePerlinHeight(Seeds, current_vertex.x, current_vertex.z);
+        }
+
+        return height_sum;
     }
 }
